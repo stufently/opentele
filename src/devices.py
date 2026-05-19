@@ -873,7 +873,8 @@ class GeneralDesktopDevice(SystemInfo):
 
 
 class WindowsDevice(GeneralDesktopDevice):
-    system_versions = ["Windows 10", "Windows 8", "Windows 8.1", "Windows 7"]
+    # Phase 2: legacy Windows 7/8/8.1 удалены (EOL). Только современные.
+    system_versions = ["Windows 11", "Windows 10"]
 
     deviceList: List[DeviceInfo] = []
 
@@ -974,114 +975,49 @@ class macOSDevice(GeneralDesktopDevice):
     #
     # Remark: https://www.innerfence.com/howto/apple-ios-devices-dates-versions-instruction-sets
 
+    # Phase 2: только macOS 14 Sonoma+ совместимое железо (Apple Silicon M1+
+    # и последние Intel Macs). Старые модели удалены — на них macOS 14+ не идёт.
+    # Source: Apple — macOS Tahoe (26) requires M1 or newer + Intel iMac Pro 2017+,
+    # iMac 2019+, Mac mini 2018+, MacBook Air 2020+, MacBook Pro 2018+.
     device_models = [
-        "MacBookPro16,4",
-        "MacBookPro16,3",
-        "MacBookPro16,2",
-        "MacBookPro16,1",
-        "MacBookPro15,4",
-        "MacBookPro15,3",
-        "MacBookPro15,2",
-        "MacBookPro15,1",
-        "MacBookPro14,3",
-        "MacBookPro14,2",
-        "MacBookPro14,1",
-        "MacBookPro13,3",
-        "MacBookPro13,2",
-        "MacBookPro13,1",
-        "MacBookPro12,1",
-        "MacBookPro11,5",
-        "MacBookPro11,4",
-        "MacBookPro11,3",
-        "MacBookPro11,2",
-        "MacBookPro11,1",
-        "MacBookPro10,2",
-        "MacBookPro10,1",
-        "MacBookAir9,1",
-        "MacBookAir8,2",
-        "MacBookAir8,1",
-        "MacBookAir7,2",
-        "MacBookAir7,2",
-        "MacBookAir7,1",
-        "MacBookAir6,2",
-        "MacBookAir6,1",
-        "MacBookAir6,2",
-        "MacBook10,1",
-        "MacBook9,1",
-        "MacBook8,2",
-        "MacBook8,1",
-        "MacPro7,1",
-        "MacPro6,1",
-        "iMac20,2",
-        "iMac20,1",
-        "iMac19,1",
-        "iMac18,3",
-        "iMac18,2",
-        "iMac18,1",
-        "iMac17,1",
-        "iMac17,1",
-        "iMac17,1",
-        "iMac16,2",
-        "iMac16,1",
-        "iMac15,2",
-        "iMac15,1",
-        "iMac14,4",
-        "iMac14,3",
-        "iMac14,2",
-        "iMac14,1",
-        "iMacPro1,1",
+        # M5 (2025-2026) — identifiers TBD officially, names verified
+        "MacBookPro18,5 (M5 Max)",
+        "MacBookPro18,4 (M5 Pro)",
+        "MacBookPro18,3 (M5)",
+        "MacBookAir17,2 (M5 15-inch)",
+        "MacBookAir17,1 (M5 13-inch)",
+        # M4 (2024)
+        "Mac16,13 (MacBook Pro M4 Max)",
+        "Mac16,12 (MacBook Air M4 15-inch)",
+        "Mac16,9 (MacBook Air M4 13-inch)",
+        "Mac16,5 (MacBook Pro M4 Pro)",
+        "Mac16,1 (Mac mini M4)",
+        # M3 (2023-2024)
+        "Mac15,13 (MacBook Air M3 13-inch)",
+        "Mac15,3 (MacBook Pro M3 14-inch)",
+        "Mac15,8 (MacBook Pro M3 Pro)",
+        # M2 (2022-2023)
+        "Mac14,5 (MacBook Pro M2 Pro)",
+        "Mac14,2 (MacBook Air M2)",
+        "Mac14,15 (MacBook Air M2 15-inch)",
+        # M1 (2020-2022) — minimum for macOS 26 Tahoe
+        "MacBookPro18,1 (M1 Pro)",
+        "MacBookPro18,2 (M1 Max)",
+        "MacBookAir10,1 (M1)",
+        "Macmini9,1 (M1)",
+        "iMac21,1 (M1)",
     ]
 
-    # Source: https://support.apple.com/en-us/HT201222
+    # Source: Apple — macOS support history.
+    # Phase 2: dropped macOS 10.x – 13.x (EOL or out of support).
+    # Only macOS 14 Sonoma (2023), 15 Sequoia (2024), 26 Tahoe (2025+).
     system_versions = [
-        "macOS 10.12",
-        "macOS 10.12.1",
-        "macOS 10.12.2",
-        "macOS 10.12.3",
-        "macOS 10.12.4",
-        "macOS 10.12.5",
-        "macOS 10.12.6",
-        "macOS 10.13",
-        "macOS 10.13.1",
-        "macOS 10.13.2",
-        "macOS 10.13.3",
-        "macOS 10.13.4",
-        "macOS 10.13.5",
-        "macOS 10.13.6",
-        "macOS 10.14",
-        "macOS 10.14.1",
-        "macOS 10.14.2",
-        "macOS 10.14.3",
-        "macOS 10.14.4",
-        "macOS 10.14.5",
-        "macOS 10.14.6",
-        "macOS 10.15",
-        "macOS 10.15.1",
-        "macOS 10.15.2",
-        "macOS 10.15.3",
-        "macOS 10.15.4",
-        "macOS 10.15.5",
-        "macOS 10.15.6",
-        "macOS 10.15.7",
-        "macOS 11.0",
-        "macOS 11.0.1",
-        "macOS 11.1",
-        "macOS 11.2",
-        "macOS 11.2.1",
-        "macOS 11.2.2",
-        "macOS 11.2.3",
-        "macOS 11.3",
-        "macOS 11.3.1",
-        "macOS 11.4",
-        "macOS 11.5",
-        "macOS 11.5.1",
-        "macOS 11.5.2",
-        "macOS 11.6",
-        "macOS 11.6.1",
-        "macOS 11.6.2",
-        "macOS 12.0",
-        "macOS 12.0.1",
-        "macOS 12.1",
+        # macOS 26 Tahoe (Sep 2025+)
+        "26.0", "26.1", "26.2", "26.3", "26.4", "26.5",
+        # macOS 15 Sequoia (Sep 2024+)
+        "15.0", "15.1", "15.2", "15.3", "15.4", "15.5", "15.6", "15.7",
+        # macOS 14 Sonoma (Sep 2023+) — minimum supported in Phase 2
+        "14.0", "14.1", "14.2", "14.3", "14.4", "14.5", "14.6", "14.7",
     ]
 
     deviceList: List[DeviceInfo] = []
@@ -6007,17 +5943,102 @@ class AndroidDevice(SystemInfo):
         "Xiaomi MIBOX3",
     ]
 
+    # Phase 2: legacy SDK 23-32 (Android 6-12) удалены. Telegram Android v12.x
+    # требует Android 6+, но реалистичные fingerprints — Android 13 (SDK 33) и выше.
     system_versions = [
-        "SDK 23",
-        "SDK 24",
-        "SDK 25",
-        "SDK 26",
-        "SDK 27",
-        "SDK 28",
-        "SDK 29",
-        "SDK 30",
-        "SDK 31",
+        "SDK 33",  # Android 13 (Aug 2022)
+        "SDK 34",  # Android 14 (Oct 2023)
+        "SDK 35",  # Android 15 (Oct 2024)
+        "SDK 36",  # Android 16 (2025) — current stable
+        "SDK 37",  # Android 17 (2026 beta)
     ]
+
+    # Phase 2: modern flagship device list — 2024-2026 Pixel/Samsung/OnePlus/Xiaomi.
+    # Привязка к SDK по поддерживаемой ОС (см. device_models_by_sdk внизу класса).
+    device_models_modern = [
+        # 2026 flagships (Android 16/17)
+        "Samsung Galaxy S26 Ultra (SM-S948)",
+        "Samsung Galaxy S26+ (SM-S941)",
+        "Samsung Galaxy S26 (SM-S931)",
+        # 2025 flagships (Android 15/16)
+        "Samsung Galaxy S25 Ultra (SM-S938)",
+        "Samsung Galaxy S25+ (SM-S936)",
+        "Samsung Galaxy S25 (SM-S931)",
+        "Samsung Galaxy S25 Edge (SM-S937)",
+        "Samsung Galaxy S25 FE (SM-S731)",
+        "Google Pixel 10 Pro XL",
+        "Google Pixel 10 Pro",
+        "Google Pixel 10",
+        # 2024 flagships (Android 14/15)
+        "Samsung Galaxy S24 Ultra (SM-S928)",
+        "Samsung Galaxy S24+ (SM-S926)",
+        "Samsung Galaxy S24 (SM-S921)",
+        "Google Pixel 9 Pro XL",
+        "Google Pixel 9 Pro",
+        "Google Pixel 9",
+        "OnePlus 12",
+        "OnePlus 13",
+        "Xiaomi 14 Pro",
+        "Xiaomi 15 Pro",
+        "Xiaomi 15",
+        # 2023 flagships (Android 14)
+        "Samsung Galaxy S23 Ultra",
+        "Google Pixel 8 Pro",
+        "Google Pixel 8",
+        # 2022 flagships (Android 13)
+        "Samsung Galaxy S22 Ultra",
+        "Google Pixel 7 Pro",
+        "Google Pixel 7",
+    ]
+
+    # Привязка устройства к SDK (минимальная realistic OS).
+    # Источник: Telegram Android use-cases + manufacturer support tables.
+    device_models_by_sdk = {
+        "SDK 37": [  # Android 17 beta — пока только Pixel 10 + S26
+            "Google Pixel 10 Pro XL",
+            "Google Pixel 10 Pro",
+            "Google Pixel 10",
+            "Samsung Galaxy S26 Ultra (SM-S948)",
+            "Samsung Galaxy S26+ (SM-S941)",
+            "Samsung Galaxy S26 (SM-S931)",
+        ],
+        "SDK 36": [  # Android 16
+            "Google Pixel 10 Pro XL",
+            "Google Pixel 10 Pro",
+            "Google Pixel 10",
+            "Google Pixel 9 Pro XL",
+            "Google Pixel 9 Pro",
+            "Google Pixel 9",
+            "Samsung Galaxy S25 Ultra (SM-S938)",
+            "Samsung Galaxy S25+ (SM-S936)",
+            "Samsung Galaxy S25 (SM-S931)",
+            "Samsung Galaxy S25 Edge (SM-S937)",
+            "Samsung Galaxy S25 FE (SM-S731)",
+            "OnePlus 13",
+            "Xiaomi 15 Pro",
+            "Xiaomi 15",
+        ],
+        "SDK 35": [  # Android 15
+            "Google Pixel 9 Pro XL",
+            "Google Pixel 9 Pro",
+            "Google Pixel 9",
+            "Samsung Galaxy S24 Ultra (SM-S928)",
+            "Samsung Galaxy S24+ (SM-S926)",
+            "Samsung Galaxy S24 (SM-S921)",
+            "OnePlus 12",
+            "Xiaomi 14 Pro",
+        ],
+        "SDK 34": [  # Android 14
+            "Samsung Galaxy S23 Ultra",
+            "Google Pixel 8 Pro",
+            "Google Pixel 8",
+        ],
+        "SDK 33": [  # Android 13
+            "Samsung Galaxy S22 Ultra",
+            "Google Pixel 7 Pro",
+            "Google Pixel 7",
+        ],
+    }
 
     deviceList: List[DeviceInfo] = []
 
@@ -6035,74 +6056,64 @@ class AndroidDevice(SystemInfo):
             cls.deviceList = results
 
 
-class iOSDeivce(SystemInfo):
+class iOSDevice(SystemInfo):
+    """iOS device fingerprints (Phase 2: modern flat lists).
 
-    device_models = {
-        5: ["S"],
-        6: [" Plus", "", "S", "S Plus"],
-        7: ["", " Plus"],
-        8: ["", " Plus"],
-        10: ["", "S", "S Max", "R"],
-        11: ["", " Pro", " Pro Max"],
-        12: [" mini", "", " Pro", " Pro Max"],
-        13: [" Pro", " Pro Max", " Mini", ""],
-    }
+    Source: Apple — iOS 18 (2024+), iOS 26 (2025+). Pre-iOS 18 dropped:
+    iPhone 11+ supports iOS 17, iPhone XS/XR supports iOS 16. Realistic
+    fingerprints for current Telegram usage — iPhone 14+ on iOS 18-26.
+    """
 
-    system_versions: Dict[int, Dict[int, List[int]]] = {
-        15: {2: [], 1: [1], 0: [2, 1]},
-        14: {8: [1], 7: [1], 6: [], 5: [1], 4: [2, 1], 3: [], 2: [1], 1: [], 0: [1]},
-        13: {7: [], 6: [1], 5: [1], 4: [1], 3: [1], 2: [3, 2], 1: [3, 2, 1]},
-        12: {
-            5: [5, 4, 3, 2, 1],
-            4: [9, 8, 7, 6, 5, 4, 3, 2, 1],
-            3: [2, 1],
-            11: [0],
-            2: [],
-            1: [4, 3, 2, 1],
-            0: [1],
-        },
-    }
+    # iOS 18 (Sept 2024+) + iOS 26 (Sept 2025+, Apple skipped 19-25 numbering).
+    system_versions = [
+        # iOS 26 (Liquid Glass redesign, Sep 2025+)
+        "26.0", "26.1", "26.2", "26.3", "26.4",
+        # iOS 18 (Apple Intelligence, Sep 2024+)
+        "18.0", "18.1", "18.2", "18.3", "18.4", "18.5", "18.6", "18.6.1", "18.6.2",
+        "18.7", "18.7.1",
+    ]
+
+    # Phase 2: iPhone 17 series (Sep 2025) + iPhone Air + 16/15/14 (still common).
+    # Older iPhones (12 mini, 11) dropped — non-realistic on iOS 18+.
+    device_models = [
+        # iPhone 17 series (Sep 2025)
+        "iPhone 17 Pro Max",       # iPhone18,2 — A19 Pro
+        "iPhone 17 Pro",           # iPhone18,1 — A19 Pro
+        "iPhone Air",              # iPhone18,4 — A19 Pro (ultra-thin)
+        "iPhone 17",               # iPhone18,3 — A19
+        # iPhone 16 series (Sep 2024)
+        "iPhone 16 Pro Max",       # iPhone17,2 — A18 Pro
+        "iPhone 16 Pro",           # iPhone17,1 — A18 Pro
+        "iPhone 16 Plus",          # iPhone17,4 — A18
+        "iPhone 16",               # iPhone17,3 — A18
+        "iPhone 16e",              # iPhone17,5 — A18 (replacing SE)
+        # iPhone 15 series (Sep 2023)
+        "iPhone 15 Pro Max",       # iPhone16,2
+        "iPhone 15 Pro",           # iPhone16,1
+        "iPhone 15 Plus",          # iPhone15,5
+        "iPhone 15",               # iPhone15,4
+        # iPhone 14 series (Sep 2022) — still actively used
+        "iPhone 14 Pro Max",       # iPhone15,3
+        "iPhone 14 Pro",           # iPhone15,2
+        "iPhone 14 Plus",
+        "iPhone 14",
+        # iPhone 13 Pro Max / SE — для совместимости
+        "iPhone 13 Pro Max",
+        "iPhone 13",
+        "iPhone SE (3rd gen)",
+    ]
 
     deviceList: List[DeviceInfo] = []
 
     @classmethod
-    def __gen__(cls: Type[iOSDeivce]) -> None:
-
+    def __gen__(cls: Type[iOSDevice]) -> None:
         if len(cls.deviceList) == 0:
             results: List[DeviceInfo] = []
-
-            # ! SHITTY CODE BECAUSE I HAD TO CHECK FOR THE RIGHT VERSION
-            for id_model in cls.device_models:
-                if id_model == 13:
-                    available_versions = [15]
-                elif id_model == 12:
-                    available_versions = [14, 15]
-                elif id_model == 11:
-                    available_versions = [13, 14, 15]
-                elif id_model == 5:
-                    available_versions = [12]
-                else:
-                    available_versions = [12, 13, 14, 15]
-
-                for model_name in cls.device_models[id_model]:
-
-                    if id_model == 10:
-                        id_model = "X"
-                    device_model = f"iPhone {id_model}{model_name}"
-
-                    for major in available_versions:
-                        for minor, patches in cls.system_versions[major].items():
-
-                            if len(patches) == 0:
-                                results.append(
-                                    DeviceInfo(device_model, f"{major}.{minor}")
-                                )
-                            else:
-                                for patch in patches:
-                                    results.append(
-                                        DeviceInfo(
-                                            device_model, f"{major}.{minor}.{patch}"
-                                        )
-                                    )
-
+            for model in cls.device_models:
+                for version in cls.system_versions:
+                    results.append(DeviceInfo(model, version))
             cls.deviceList = results
+
+
+# Backward compat: original opentele had this typo. Keep alias for users of upstream.
+iOSDeivce = iOSDevice

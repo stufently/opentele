@@ -275,7 +275,7 @@ class APIData(object, metaclass=BaseAPIMetaClass):
             deviceInfo = AndroidDevice.RandomDevice(unique_id)
 
         elif cls == API.TelegramIOS:
-            deviceInfo = iOSDeivce.RandomDevice(unique_id)
+            deviceInfo = iOSDevice.RandomDevice(unique_id)
 
         elif cls == API.TelegramMacOS:
             deviceInfo = macOSDevice.RandomDevice(unique_id)
