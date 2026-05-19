@@ -572,6 +572,7 @@ class TDesktop(BaseObject):
         flag: Type[LoginFlag] = CreateNewSession,
         api: Union[Type[APIData], APIData] = API.TelegramDesktop,
         password: str = None,
+        **kwargs,
     ) -> TDesktop:
         """
         Create an instance of `TDesktop` from `TelegramClient`.
@@ -616,7 +617,12 @@ class TDesktop(BaseObject):
         _self.__generateLocalKey()
 
         await td.Account.FromTelethon(
-            telethonClient, flag=flag, api=api, password=password, owner=_self
+            telethonClient,
+            flag=flag,
+            api=api,
+            password=password,
+            owner=_self,
+            **kwargs,
         )
 
         return _self
@@ -634,8 +640,14 @@ class TDesktop(BaseObject):
         """
         cls.kPerformanceMode = enabled
 
-    kMaxAccounts: int = int(3)
-    """The maximum amount of accounts a client can have"""
+    kMaxAccounts: int = int(6)
+    """The maximum amount of accounts a client can have.
+
+    Phase 3: bumped from upstream's 3 to 6, matching Telegram Desktop's
+    ``kPremiumMaxAccounts`` (``main_domain.h`` in tdesktop source).
+    snakechilds/opentele-nuitka used 100, but TDesktop itself caps at 6 —
+    raising further has no real-world effect on the Telegram client side.
+    """
 
     kDefaultKeyFile: str = "data"
     """See `TDesktop.keyFile`"""

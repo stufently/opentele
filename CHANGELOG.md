@@ -1,6 +1,31 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-05-19 — opentele-ng Phase 3 (multi-account + kwargs + nuitka + QR docs + linter)
+
+Phase 3 picks up the QoL fixes from `snakechilds/opentele-nuitka` and `Ehekatech/opentele-tg`, plus replaces the broken upstream pylint workflow with ruff. The 3-AI prep review (Codex) corrected scope before implementation:
+- `kMaxAccounts` → 6 (TDesktop's premium account limit), not 100 (snakechilds' value makes no sense — Telegram Desktop itself caps at 6).
+- Unknown `lskType` fail-fast deferred to Phase 4 — current `logging.warning` already desyncs the stream; switching to `raise` without first knowing payload size for unknown keys is risky.
+
+### Added
+- **`TDesktop.kMaxAccounts = 6`** — was hardcoded 3 in upstream. Matches Telegram Desktop's `kPremiumMaxAccounts` from `main_domain.h`. Real-world Premium users can now load all 6 accounts from a single tdata folder.
+- **`**kwargs` forwarding** in `TDesktop.FromTelethon` and `Account.FromTelethon` — Telethon-specific options (proxy, connection, timeout) now flow through to `QRLoginToNewClient` without bridge-layer modification. Source: snakechilds/opentele-nuitka commit `073329c`, adapted with `**kwargs` rather than `kwargs: dict = None`.
+- **`docs/examples/qr-login.md`** (+115 lines) — full QR-code login example: minimal flow, 2FA branch, tdata conversion, kwargs forwarding for proxy/connection. Source: Ehekatech/opentele-tg commit `c7550ba`, expanded with Phase 3 context.
+- **Ruff workflow** (`.github/workflows/lint.yml`) — replaces broken upstream `pylint.yml` (Python 3.7, EOL). Runs `ruff check src/ tests/` on push/PR.
+- **`.ruff.toml`** with conservative rule set tailored to upstream code style (ignores `E711`, `E731`, `W293`, `F401`, etc. — patterns we don't want to mass-rewrite). Strict on new code added in Phase 1+.
+- **6 new Phase 3 tests** (`tests/test_phase3_features.py`) covering kMaxAccounts, kwargs forwarding, sharemethod nuitka fix, QR docs existence.
+- Total: 92 → 98 tests, all green on Python 3.10–3.14 Docker matrix.
+
+### Changed
+- **`utils.sharemethod.__new__`** — `clsName = func.__class__.__name__`, `bases = func.__class__.__bases__`, `attrs = func.__dict__` → stable literals `"function"`, `(object,)`, `{}`. The dynamic form broke Nuitka compilation (snakechilds `eb4ff4d`). Runtime behavior unchanged — the synthetic class name/bases don't matter, the descriptor wraps the function regardless.
+- **MaxAccountLimit error message** now interpolates current `kMaxAccounts` (was hardcoded `"more than 3"`).
+- **Imports across 30 files** auto-sorted by ruff (cosmetic, no behavior change).
+- Removed `.github/workflows/pylint.yml` (upstream, broken: targets Python 3.7 which is EOL on GitHub-hosted runners).
+
+### Process
+- 3-AI prep review (Codex / Cursor / Gemini) before Phase 3 implementation; Codex caught the `kMaxAccounts=100` and unknown-keyType scope issues. Gemini hit rate limit, Cursor failed twice in this batch (network) — Codex review carried the gate.
+- Linter integrated into Docker test image + CI; ruff `check` enforced, format not enforced (preserves upstream code as-is).
+
 ## [0.2.1] - 2026-05-19 — opentele-ng Phase 2.5 (fingerprint review fixes)
 
 Three independent AI code reviews (Codex, Cursor, Gemini) on `v0.2.0-phase2` flagged 4 critical and several high/medium issues. Phase 2 added device lists but the `__gen__()` methods didn't actually use them — `RandomDevice()` produced legacy 2017-2022 phones paired with Android 16 SDK. Phase 2.5 fixes the runtime generation layer.

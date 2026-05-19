@@ -1130,7 +1130,11 @@ class Account(BaseObject):
         api: Union[Type[APIData], APIData] = API.TelegramDesktop,
         password: str = None,
         owner: td.TDesktop = None,
+        **kwargs,
     ):
+        """Phase 3: ``**kwargs`` forwarded to ``QRLoginToNewClient`` so callers
+        can pass Telethon-specific options (proxy, connection, timeout etc.)
+        without modifying the bridge layer. Source: snakechilds-style fix."""
 
         Expects(
             (flag == CreateNewSession) or (flag == UseCurrentSession),
@@ -1153,7 +1157,9 @@ class Account(BaseObject):
                     ),
                 )
 
-            copy = await telethonClient.QRLoginToNewClient(api=api, password=password)
+            copy = await telethonClient.QRLoginToNewClient(
+                api=api, password=password, **kwargs
+            )
             await copy.get_me()
         else:
             copy = telethonClient
@@ -1176,7 +1182,7 @@ class Account(BaseObject):
             Expects(
                 owner.accountsCount < td.TDesktop.kMaxAccounts,
                 exception=MaxAccountLimit(
-                    "You can't have more than 3 accounts in one TDesktop clent.\n"
+                    f"You can't have more than {td.TDesktop.kMaxAccounts} accounts in one TDesktop client.\n"
                     "Please create another instance of TDesktop or use Account.FromTelethon() to create an Account() independently"
                 ),
             )

@@ -230,10 +230,13 @@ class sharemethod(type):
 
     def __new__(cls: Type[_T], func: _F) -> Type[_F]:
 
-        clsName = func.__class__.__name__
-        bases = func.__class__.__bases__
-        attrs = func.__dict__
-        # attrs = dict(func.__class__.__dict__)
+        # Phase 3: stable literals instead of `func.__class__.__name__/__bases__`.
+        # The dynamic form breaks Nuitka compilation (snakechilds/opentele-nuitka
+        # commit eb4ff4d). At runtime this descriptor wraps a function and the
+        # synthetic class name/bases don't matter for behavior.
+        clsName = "function"
+        bases = (object,)
+        attrs: Dict[str, Any] = {}
         result = super().__new__(cls, clsName, bases, attrs)
         result.__fget__ = func
 
