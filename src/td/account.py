@@ -50,6 +50,11 @@ class MapData(BaseObject):  # nocov
         self._exportSettingsKey = FileKey(0)
         self._installedMasksKey = FileKey(0)
         self._recentMasksKey = FileKey(0)
+        # Новые ключи Telegram Desktop 5.x-6.x (источник: RobertAzovski)
+        self._roundPlaceholder = FileKey(0)
+        self._inlineBotsDownloads = FileKey(0)
+        self._mediaLastPlaybackPositions = FileKey(0)
+        self._botStorages = FileKey(0)
 
     def read(self, localKey: td.AuthKey, legacyPasscode: QByteArray) -> None:
 
@@ -127,6 +132,11 @@ class MapData(BaseObject):  # nocov
         userSettingsKey = 0
         recentHashtagsAndBotsKey = 0
         exportSettingsKey = 0
+        # Новые ключи Telegram Desktop 5.x-6.x (источник: RobertAzovski)
+        roundPlaceholder = 0
+        inlineBotsDownloads = 0
+        mediaLastPlaybackPositions = 0
+        botStorages = 0
 
         is_finished = False
 
@@ -234,7 +244,24 @@ class MapData(BaseObject):  # nocov
                 searchSuggestionsKey = map.stream.readUInt64()
 
             elif keyType == lskType.lskWebviewTokens:
-                is_finished = True
+                # data: QByteArray bots, QByteArray other — но в текущем формате
+                # tdesktop'а это два uint64 файл-ключа.
+                webviewStorageTokenBots = map.stream.readUInt64()
+                webviewStorageTokenOther = map.stream.readUInt64()
+
+            # Новые ключи Telegram Desktop 5.x-6.x (источник: RobertAzovski)
+            elif keyType == lskType.lskRoundPlaceholder:
+                roundPlaceholder = map.stream.readUInt64()
+
+            elif keyType == lskType.lskInlineBotsDownloads:
+                inlineBotsDownloads = map.stream.readUInt64()
+
+            elif keyType == lskType.lskMediaLastPlaybackPositions:
+                mediaLastPlaybackPositions = map.stream.readUInt64()
+
+            elif keyType == lskType.lskBotStorages:
+                # data: PeerId botId — храним FileKey-указатель на блок
+                botStorages = map.stream.readUInt64()
 
             else:
                 logging.warning(f"Unknown key type in encrypted map: {keyType}")
@@ -270,6 +297,11 @@ class MapData(BaseObject):  # nocov
         self._settingsKey = userSettingsKey
         self._recentHashtagsAndBotsKey = recentHashtagsAndBotsKey
         self._exportSettingsKey = exportSettingsKey
+        # Новые ключи Telegram Desktop 5.x-6.x
+        self._roundPlaceholder = roundPlaceholder
+        self._inlineBotsDownloads = inlineBotsDownloads
+        self._mediaLastPlaybackPositions = mediaLastPlaybackPositions
+        self._botStorages = botStorages
         self._oldMapVersion = mapData.version
 
     def prepareToWrite(self) -> td.Storage.EncryptedDescriptor:
