@@ -527,12 +527,12 @@ class API(BaseObject):
 
         api_id = 21724
         api_hash = "3e0cb5efcd52300aec5994fdfc5bdc16"
-        # Phase 2.5: TelegramAndroidX (Telegram X / TGX) — distinct app_version pattern.
-        # Source: Paramon `c0d8085` — "0.26.3.1668-arm64-v8a". Updated to current line.
-        # Reference: github.com/Telegram-Android-X / TGX historical builds.
+        # Phase 2.5 (review-fix): TelegramAndroidX (Telegram X / TGX) — distinct
+        # versioning pattern "0.X.Y.Z-arm64-v8a". Current stable as of May 2026:
+        # 0.28.3 (build 1785). Source: apkmirror.com/apk/telegram-fz-llc/telegram-x/
         device_model = "Samsung Galaxy S25 Ultra (SM-S938)"
         system_version = "SDK 36"
-        app_version = "0.27.5.1842-arm64-v8a"
+        app_version = "0.28.3.1785-arm64-v8a"
         lang_code = "en"
         system_lang_code = "en-US"
         lang_pack = "android"
@@ -586,11 +586,12 @@ class API(BaseObject):
         api_hash = "68875f756c9b437a8b916ca3de215815"
         # api_id = 9                                    |
         # api_hash = "3975f648bb682ee889f35483bc618d1c" | Telegram for macOS uses this api, but it's unofficial api, why?
-        # Phase 2.5: TelegramSwift (macOS Telegram) — current line ≈ 11.x / 12.x.
-        # Reference: github.com/overtake/TelegramSwift releases. Conservative: 11.13.
+        # Phase 2.5 (review-fix): TelegramSwift current MARKETING_VERSION = 11.15.
+        # Source: github.com/overtake/TelegramSwift Telegram.xcodeproj/project.pbxproj
+        # `release` branch. Releases page is sparse so version comes from project file.
         device_model = "MacBook Pro 14-inch M5"
         system_version = "macOS 26.0"
-        app_version = "11.13"
+        app_version = "11.15"
         lang_code = "en"
         system_lang_code = "en-US"
         lang_pack = "macos"

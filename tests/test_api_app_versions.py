@@ -36,13 +36,19 @@ def test_telegram_androidx_default_app_version_has_tgx_format() -> None:
     """TelegramAndroidX (Telegram X / TGX) — отдельная нумерация 0.X.Y.Z-arm64-v8a.
     Phase 2.5: после ревью переведено на правильный TGX pattern (был mainline 12.x)."""
     version = API.TelegramAndroidX.app_version
-    # TGX historic pattern: "0.27.5.1842-arm64-v8a"
-    assert version.startswith("0."), (
-        f"TelegramAndroidX should follow TGX 0.X.Y.Z pattern: {version!r}"
+    # TGX pattern: "0.28.3.1785-arm64-v8a" (apkmirror — Telegram X stable May 2026)
+    pattern = re.compile(r"^0\.\d+\.\d+\.\d+-arm64-v8a$")
+    assert pattern.match(version), (
+        f"TelegramAndroidX should follow TGX pattern '0.X.Y.Z-arm64-v8a': {version!r}"
     )
-    assert "-arm64-v8a" in version or "-arm64-v8a" in version, (
-        f"TelegramAndroidX should include arch suffix: {version!r}"
-    )
+
+
+def test_telegram_macos_default_app_version_is_modern() -> None:
+    """TelegramSwift (macOS) на 2026-05: MARKETING_VERSION = 11.15.
+    Phase 2.5 после ревью обновлено с 11.13 (consvервативно) на актуальное 11.15."""
+    version = API.TelegramMacOS.app_version
+    major = _major_version(version)
+    assert major >= 11, f"TelegramMacOS default app_version stale: {version}"
 
 
 def test_telegram_ios_default_app_version_is_12_plus() -> None:
