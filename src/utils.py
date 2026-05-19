@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import warnings
+
 from . import debug
 
 from typing import Coroutine, Tuple, Type, Callable, TypeVar, Optional, List, Any, Dict
@@ -61,7 +63,7 @@ class override(object):  # nocov
 
         # check if decorated_cls really is a function
         if not isinstance(decorated_func, FunctionType):
-            raise BaseException(
+            raise TypeError(
                 "@override decorator is only for functions, not classes"
             )
 
@@ -90,7 +92,16 @@ class extend_class(object):  # nocov
             )
 
         newAttributes = dict(decorated_cls.__dict__)
-        crossDelete = ["__abstractmethods__", "__module__", "_abc_impl", "__doc__"]
+        # PEP 749 (Python 3.13+) добавил __firstlineno__ и __static_attributes__ —
+        # их нельзя переносить в родителя, они уникальны для каждого определения класса.
+        crossDelete = [
+            "__abstractmethods__",
+            "__module__",
+            "_abc_impl",
+            "__doc__",
+            "__firstlineno__",
+            "__static_attributes__",
+        ]
         [
             (newAttributes.pop(cross) if cross in newAttributes else None)
             for cross in crossDelete
@@ -108,17 +119,29 @@ class extend_class(object):  # nocov
                 # check if class base already has this attribute
                 result = extend_class.getattr(base, attributeName)
 
-                if result != None:
-                    if id(result["value"]) == id(attributeValue):
+                if result is not None:
+                    # В Python 3.13+ bound methods получают новый id() при каждом
+                    # доступе — сравнение по `id()` ненадёжно. Сравниваем по
+                    # __func__ (underlying function), которая стабильна.
+                    left = getattr(result["value"], "__func__", result["value"])
+                    right = getattr(attributeValue, "__func__", attributeValue)
+                    if left is right:
                         crossDelete[attributeName] = attributeValue
                     else:
 
                         # if not override this attribute
                         if not override.isOverride(attributeValue):
-                            print(
-                                f"[{attributeName}] {id(result['value'])} - {id(attributeValue)}"
+                            # Fail-soft: вместо raise BaseException гасим в warning.
+                            # На Python 3.13+ строгий raise ломает легитимные расширения
+                            # (dunder-новинки PEP 749, новые слоты Telethon и т.п.).
+                            warnings.warn(
+                                f"extend_class: attribute conflict for "
+                                f"{attributeName!r} on {base.__name__}; "
+                                f"keeping base value. Use @override to replace.",
+                                RuntimeWarning,
+                                stacklevel=2,
                             )
-                            raise BaseException("err")
+                            crossDelete[attributeName] = attributeValue
 
             [newAttributes.pop(cross) for cross in crossDelete]
 
