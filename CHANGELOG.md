@@ -1,6 +1,38 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] - 2026-05-19 — opentele-ng Phase 2.5 (fingerprint review fixes)
+
+Three independent AI code reviews (Codex, Cursor, Gemini) on `v0.2.0-phase2` flagged 4 critical and several high/medium issues. Phase 2 added device lists but the `__gen__()` methods didn't actually use them — `RandomDevice()` produced legacy 2017-2022 phones paired with Android 16 SDK. Phase 2.5 fixes the runtime generation layer.
+
+### Fixed (critical)
+- **`macOSDevice.system_versions`** — restored `"macOS X.Y"` prefix (Phase 2 init stripped it, producing bare `"26.0"`). TDesktop `SystemVersionPretty()` returns prefixed form; without it, fingerprint regressed below Phase 1.5 quality.
+- **`macOSDevice.__gen__`** — `FromIdentifier` parser stripped digits/punctuation from new clean-name strings, collapsing `"Mac16,9 (MacBook Air M4 13-inch)"` → `"MacMacBook Air Minch"`. Now applies only to legacy board IDs (`"MacBookPro16,4"` style); clean names pass through.
+- **`AndroidDevice.__gen__`** — was iterating legacy 4500-model list × SDK 33-37 (unrealistic: 2017 Redmi + Android 17). Now uses `device_models_by_sdk` pairing (modern flagships only). Legacy `device_models` retained as fallback for unforeseen consumers.
+- **Mac M5 identifiers**: dropped guessed `Mac17,3 (M5 base)` / `MacBookPro18,3-5 (M5 series)` — instead store clean marketing names (`"MacBook Pro 14-inch M5 Max"`) since TDesktop `initConnection.device_model` sends marketing strings, not board IDs.
+
+### Fixed (high)
+- **Galaxy S26 SM codes**: removed duplicate `SM-S931` shared with S25 base. S26 series now `SM-S941` (base), `SM-S946` (+), `SM-S948` (Ultra) — consistent with Samsung's `SM-S9X1/X6/X8` series naming.
+- **`API.TelegramAndroid.device_model`**: unified with `device_models_modern` — was `"Samsung SM-S938"` (raw SKU), now `"Samsung Galaxy S25 Ultra (SM-S938)"` (matches marketing+SKU pattern Telegram Android sends).
+
+### Fixed (medium)
+- **`API.TelegramAndroidX.app_version`** — `12.6.0 (6500)` was Android-mainline format; Telegram X (TGX) uses distinct pattern `0.X.Y.Z-arm64-v8a`. Now `"0.27.5.1842-arm64-v8a"`. Source: Paramon `c0d8085`.
+- **`API.TelegramMacOS`** — `8.4 / macOS 12.0.1 / MacBook Pro` (2022 stale) → `11.13 / macOS 26.0 / MacBook Pro 14-inch M5`.
+- **Intel Macs added** to `macOSDevice.device_models` for backward fingerprint diversity (iMac Pro, iMac Retina 5K 27 2020, Mac mini 2018, MBP 16 2019, MBP 13 2020) — Apple's compatibility list for macOS Tahoe.
+
+### Added (tests)
+- **12 new runtime tests** in `tests/test_devices_runtime.py` covering actual `RandomDevice()` and `API.*.Generate()` output (not just static list contents):
+  - `test_macOSDevice_random_model_has_no_FromIdentifier_corruption` (catches `"Minch"`, `"MacMac"`)
+  - `test_AndroidDevice_random_uses_modern_devices_not_legacy_4500_list`
+  - `test_macOSDevice_system_versions_have_macOS_prefix`
+  - `test_telegram_desktop_macos_generate_returns_macos_prefix`
+  - `test_AndroidDevice_random_system_version_is_modern_sdk` (SDK ≥ 33)
+  - plus iOS / Windows runtime smoke
+- Total: 79 → 91 tests, all green on Python 3.10–3.14 (Docker matrix).
+
+### Review process
+- Round 1 review: Codex (verified C++ via `gist.githubusercontent.com/adamawolf/3048717` + Apple Support), Cursor (deep diff against `__gen__`), Gemini (FromIdentifier failure mode analysis). All three agreed: do not push Phase 2 as-is.
+
 ## [0.2.0] - 2026-05-19 — opentele-ng Phase 2 (2026 device fingerprints)
 
 Phase 2 brings device/OS/app-version fingerprints up to **May 2026**: 7 months past Paramon's 2025-10 baseline, 4 years past upstream `thedemons/opentele` (2022).
