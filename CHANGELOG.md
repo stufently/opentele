@@ -1,6 +1,34 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.1.1] - 2026-05-19 — opentele-ng Phase 1.5 (review fixes)
+
+After three independent AI code reviews (Codex, Cursor, Gemini), Phase 1's "fresh tdata read" implementation had wire format mismatches with upstream Telegram Desktop `storage_account.cpp`. Phase 1.5 fixes them.
+
+### Fixed (critical)
+- **`lskWebviewTokens` (0x19)**: was read/written as two `uint64`; upstream TDesktop is **two `QByteArray`** (token data, not file keys). Phase 1.5 uses `stream >> QByteArray` and `td.Serialize.bytearraySize()` for size accounting. Without this fix, any tdata with non-empty webview tokens would desync the stream.
+- **`lskBotStorages` (0x1D)**: was read/written as single `uint64`; upstream TDesktop is **map**: `uint32 count + count × (uint64 FileKey, uint64 PeerId)`. Phase 1.5 uses `Dict[PeerId, FileKey]` (analogous to `_draftsMap`). Without this fix, all bot-storage entries were silently dropped + offset shift propagated to subsequent keys.
+
+### Added
+- **`lskPrefs` (0x1E)**: missed by Phase 1 init. Wire format: `uint64 prefsKey` (like `lskLocations`). Without this key, any tdata with `_prefsKey` set would hit the `else: logging.warning(...)` branch and desync.
+- Full MapData stream roundtrip test (`tests/test_account_mapdata_full_roundtrip.py`) — writes and reads 5 new keys consecutively, verifies stream ends cleanly (`stream.atEnd() && status == Ok`).
+- `tests/test_account_lskWebviewTokens_wire_format.py`, `tests/test_account_lskBotStorages_wire_format.py`, `tests/test_account_lskPrefs.py` — per-key wire format guards.
+- `tests/test_dependencies_smoke.py` — `tgcrypto-pyrofork` AES-IGE roundtrip on 16/32/64/128/256 byte payloads + telethon version assertion.
+- `tests/test_utils_extend_class_strict.py` — strict-mode / soft-mode coverage.
+- `tests/test_utils_extend_class_validation.py` — `@extend_class` rejects non-classes with `TypeError`.
+- `ACKNOWLEDGMENTS.md` — credits to upstream and contributing forks.
+- `OPENTELE_EXTEND_STRICT=0` env flag — switches `@extend_class` to soft mode (RuntimeWarning); default is strict (TypeError on conflicts).
+
+### Changed
+- `@extend_class` now **strict by default**: real attribute conflicts (not PEP 749 dunders) raise `TypeError`, not `RuntimeWarning`. Use `OPENTELE_EXTEND_STRICT=0` for the old behavior.
+- `@extend_class` validates `decorated_cls` (not `cls`), since `cls` is always the metaclass `type`.
+- `requirements.txt`: pinned `telethon<2` upper bound until Telethon 2.x compatibility is verified.
+- README: marked Python 3.14 support as experimental (3.14 itself is still in active development as of 2026-05).
+- setup.py description and keywords aligned with corrected lskType semantics.
+
+### Total
+44 → 52 tests, all green on Python 3.10/3.11/3.12/3.13/3.14 (Docker matrix).
+
 ## [0.1.0] - 2026-05-19 — opentele-ng Phase 1
 
 ### Added

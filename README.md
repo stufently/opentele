@@ -2,7 +2,7 @@
 
 # opentele-ng
 
-> **opentele-ng** — modern fork of [thedemons/opentele](https://github.com/thedemons/opentele) for **Python 3.10 – 3.14** (including 3.13 / 3.14). Reads current Telegram Desktop 5.x – 6.x tdata format with all 2024-2025 storage keys (`lskRoundPlaceholder`, `lskInlineBotsDownloads`, `lskMediaLastPlaybackPositions`, `lskBotStorages`). Migrated to PyQt6 and `tgcrypto-pyrofork`. Import name remains `opentele` for drop-in compatibility.
+> **opentele-ng** — modern fork of [thedemons/opentele](https://github.com/thedemons/opentele) for **Python 3.10 – 3.13** (Python 3.14 — experimental, while 3.14 itself is in active development). Reads current Telegram Desktop 5.x – 6.x tdata format with the 2024-2025 storage keys (`lskRoundPlaceholder` 0x1A, `lskInlineBotsDownloads` 0x1B, `lskMediaLastPlaybackPositions` 0x1C, `lskBotStorages` 0x1D as `Dict[PeerId, FileKey]`, `lskPrefs` 0x1E). Migrated to PyQt6 and `tgcrypto-pyrofork`. Import name remains `opentele` for drop-in compatibility.
 
 ## Install
 
@@ -14,6 +14,18 @@ pip install opentele-ng
 from opentele.td import TDesktop
 from opentele.tl import TelegramClient
 ```
+
+## Credits
+
+See [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md) for upstream and contributor credits (thedemons, RobertAzovski, Snowing, azamtoiri, hustLer2k, iamlostshe).
+
+## Configuration
+
+- `OPENTELE_EXTEND_STRICT=0` — switches `@extend_class` decorator to soft mode (RuntimeWarning instead of TypeError on attribute conflicts). Default: strict.
+
+## Status
+
+Phase 1 + 1.5 of the modernization: install + install + load fresh tdata. Phase 4 (golden roundtrip tests) and Phase 5 (drop PyQt for pure-Python QDataStream → `opentele-ng 1.0.0`) are upcoming. See [CHANGELOG.md](CHANGELOG.md).
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/thedemons/opentele/main/opentele.png" alt="logo" width="180"/>

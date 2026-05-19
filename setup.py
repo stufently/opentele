@@ -5,7 +5,7 @@ README = (pathlib.Path(__file__).parent / "README.md").read_text(encoding="utf-8
 
 PACKAGE_NAME = "opentele"
 DIST_NAME = "opentele-ng"
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 SOURCE_DIRECTORY = "src"
 
 with open("requirements.txt", encoding="utf-8") as data:
@@ -18,9 +18,11 @@ setup(
     version=VERSION,
     license="MIT",
     description=(
-        "opentele-ng — modern fork of opentele for Python 3.10-3.14. "
-        "Convert Telegram Desktop tdata to Telethon sessions; supports current "
-        "Telegram Desktop 5.x-6.x tdata format with all 2024-2025 lskType keys."
+        "opentele-ng — modern fork of opentele for Python 3.10-3.13 "
+        "(3.14 experimental). Convert Telegram Desktop tdata to Telethon "
+        "sessions; supports current Telegram Desktop 5.x-6.x tdata format "
+        "with new lskType keys (RoundPlaceholder, InlineBotsDownloads, "
+        "MediaLastPlaybackPositions, BotStorages as Dict[PeerId,FileKey], Prefs)."
     ),
     long_description=README,
     long_description_content_type="text/markdown",
