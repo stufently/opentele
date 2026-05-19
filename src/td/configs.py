@@ -1,45 +1,55 @@
 from __future__ import annotations
 
-from enum import IntEnum
-
-from ..exception import *
-from ..utils import *
-from ..api import *
-from .. import tl
-
-from typing import (
-    Union,
-    Callable,
-    TypeVar,
-    Type,
-    Optional,
-    List,
-    Dict,
-    Any,
-    TYPE_CHECKING,
+import asyncio
+from ctypes import (
+    c_int32 as int32,
+)
+from ctypes import (
+    c_int64 as int64,
+)
+from ctypes import (
+    c_short as short,
+)
+from ctypes import (
+    c_uint32 as uint32,
+)
+from ctypes import (
+    c_uint64 as uint64,
+)
+from ctypes import (
+    c_ushort as ushort,
 )
 from ctypes import (
     sizeof,
-    c_int32 as int32,
-    c_int64 as int64,
-    c_uint32 as uint32,
-    c_uint64 as uint64,
-    c_short as short,
-    c_ushort as ushort,
 )
+from enum import IntEnum
+from types import FunctionType
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
+
 from PyQt6.QtCore import (
+    QBuffer,
     QByteArray,
     QDataStream,
-    QBuffer,
-    QIODevice,
-    QSysInfo,
     QDir,
     QFile,
+    QIODevice,
+    QSysInfo,
 )
-from types import FunctionType
 
-import asyncio
-
+from .. import tl
+from ..api import *
+from ..exception import *
+from ..utils import *
 
 APP_VERSION = 3004000
 TDF_MAGIC = b"TDF$"

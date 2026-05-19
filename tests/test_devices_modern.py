@@ -87,7 +87,7 @@ def test_iOS_drops_legacy_pre_18() -> None:
 
 def test_iOSDevice_alias_for_typo() -> None:
     """iOSDeivce — legacy typo, должен остаться как alias для backward compat."""
-    from opentele.devices import iOSDevice, iOSDeivce  # noqa: F401
+    from opentele.devices import iOSDeivce, iOSDevice  # noqa: F401
 
     assert iOSDeivce is iOSDevice
 

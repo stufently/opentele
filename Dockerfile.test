@@ -18,7 +18,10 @@ COPY tests/ ./tests/
 
 RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -e .
-RUN pip install --no-cache-dir pytest pytest-cov pytest-asyncio
+RUN pip install --no-cache-dir pytest pytest-cov pytest-asyncio ruff
+
+# Copy ruff config
+COPY .ruff.toml ./
 
 # tdata_test.py — live integration test, requires real Telegram auth, excluded from CI
 CMD ["pytest", "-v", "--tb=short", "--ignore=tests/tdata_test.py", "tests/"]

@@ -1,2 +1,1 @@
-from . import td
-from . import tl
+from . import td, tl

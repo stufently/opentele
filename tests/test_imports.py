@@ -48,10 +48,11 @@ def test_no_pyqt5_in_runtime() -> None:
     # Просто пытаемся импортировать наши модули и проверяем, что PyQt5 не загрузилось как
     # transitive dep (если загрузилось — значит где-то в наших модулях остался импорт).
     import importlib
+
     import opentele
+    import opentele.exception
     import opentele.td
     import opentele.tl
-    import opentele.exception
 
     # Принудительно подгружаем всё для проверки:
     importlib.import_module("opentele.utils")

@@ -1,7 +1,9 @@
 from __future__ import annotations
+
 import inspect
 import types
 import typing
+
 from PyQt6.QtCore import QDataStream
 
 

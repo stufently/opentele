@@ -1,14 +1,12 @@
 from __future__ import annotations
 
+import abc
 import os
 import warnings
+from types import FunctionType
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, Type, TypeVar
 
 from . import debug
-
-from typing import Coroutine, Tuple, Type, Callable, TypeVar, Optional, List, Any, Dict
-from types import FunctionType
-
-import abc
 
 
 def _extend_class_strict_mode() -> bool:

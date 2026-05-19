@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from .configs import *
 from . import shared as td
+from .configs import *
 
 
 class MTP(BaseObject):  # nocov

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-
-from .configs import *
-from . import shared as td
-
 import logging
+
 from telethon.network.connection.connection import Connection
 from telethon.network.connection.tcpfull import ConnectionTcpFull
 from telethon.sessions.abstract import Session
+
+from . import shared as td
+from .configs import *
 
 # if TYPE_CHECKING:
 #     from . import *

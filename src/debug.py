@@ -1,9 +1,7 @@
+import atexit
 import inspect
 import os
-
 import time
-import atexit
-
 import typing as t
 
 IS_DEBUG_MODE = False

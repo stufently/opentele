@@ -19,7 +19,6 @@ from opentele.devices import (
     macOSDevice,
 )
 
-
 # === macOS ===
 
 

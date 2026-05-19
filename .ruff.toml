@@ -1,0 +1,62 @@
+# Ruff config for opentele-ng
+# Phase 3: replaces upstream pylint workflow. Conservative — many ignores reflect
+# upstream code style we don't want to mass-rewrite. Tightening planned for Phase 4/5.
+
+target-version = "py310"
+line-length = 120
+exclude = [
+    "build",
+    "dist",
+    "docs",
+    "examples",
+    "tests/tdata_test.py",  # live integration test, excluded from CI
+    "src/devices.py",       # huge device list, no value in style-linting
+]
+
+[lint]
+# Conservative starter set: critical correctness only.
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes (undefined names, unused imports)
+    "W",   # pycodestyle warnings
+    "B",   # flake8-bugbear (likely bugs)
+    "UP",  # pyupgrade (modern Python idioms)
+    "I",   # isort (import order)
+]
+# Phase 3 starter ignores — upstream code style patterns we keep for compat:
+ignore = [
+    "E501",  # line too long
+    "E711",  # `if x != None` (upstream uses this throughout, not None pattern is modernization)
+    "E713",  # `not x in y` (upstream)
+    "E721",  # type comparison via ==
+    "E731",  # lambda assignments
+    "E741",  # ambiguous variable name (l, I)
+    "W293",  # blank line with whitespace (upstream formatting)
+    "W291",  # trailing whitespace
+    "F401",  # unused import (upstream uses `from .x import *` re-exports)
+    "F403",  # `from ... import *`
+    "F405",  # may be undefined from star imports
+    "F811",  # redefined while unused (upstream `extend_class` pattern)
+    "F841",  # unused local variable (upstream MapData.read locals)
+    "B006",  # mutable default arg (upstream)
+    "B007",  # unused loop control variable (upstream)
+    "B008",  # default arg call (upstream APIData)
+    "B028",  # no explicit stacklevel for warnings
+    "B904",  # raise without from (will fix in Phase 4 cleanup)
+    "UP004", # useless object inheritance (upstream)
+    "UP006", # use list not List (typing modernization later)
+    "UP007", # use X | Y not Union (typing modernization later)
+    "UP018", # native-literals (e.g. `str("foo")`)
+    "UP024", # os-error-alias
+    "UP032", # f-string conversion
+    "UP035", # deprecated typing imports
+    "UP045", # non-pep604-annotation-optional
+    "E402",  # module-level import not at top of file
+]
+
+[lint.per-file-ignores]
+"tests/*" = ["F401", "F811", "F541"]   # tests can have unused imports / placeholders
+"__init__.py" = ["F401", "F403"]
+
+[format]
+line-ending = "lf"

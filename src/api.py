@@ -1,15 +1,13 @@
 from __future__ import annotations
+
 import os
-
 import platform
+import typing
+from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
-from typing import Any, List, Dict, Type, TypeVar, Union, Optional
 from .devices import *
 from .exception import *
 from .utils import *
-
-import typing
-
 
 _T = TypeVar("_T")
 _RT = TypeVar("_RT")

@@ -1,21 +1,22 @@
 from __future__ import annotations
 
-from .configs import *
-from . import shared as tl
+import logging
+import warnings
+from typing import Awaitable
 
 from telethon.errors.rpcerrorlist import (
-    PasswordHashInvalidError,
     AuthTokenAlreadyAcceptedError,
     AuthTokenExpiredError,
     AuthTokenInvalidError,
     FreshResetAuthorisationForbiddenError,
     HashInvalidError,
+    PasswordHashInvalidError,
 )
 from telethon.tl.types import TypeInputClientProxy, TypeJSONValue
 from telethon.tl.types.auth import LoginTokenMigrateTo
-import logging
-import warnings
-from typing import Awaitable
+
+from . import shared as tl
+from .configs import *
 
 
 @extend_override_class
