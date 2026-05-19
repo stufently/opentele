@@ -354,7 +354,9 @@ class API(BaseObject):
         api_hash = "b18441a1ff607e10a989891a5462e627"
         device_model = "Desktop"
         system_version = "Windows 10"
-        app_version = "3.4.3 x64"
+        # Phase 2: default version aligned with current Telegram Desktop (v6.8.2 May 2026).
+        # Можно переопределить через `_generate_tdesktop_app_version()` для randomization.
+        app_version = "6.8.2 x64"
         lang_code = "en"
         system_lang_code = "en-US"
         lang_pack = "tdesktop"
@@ -417,6 +419,43 @@ class API(BaseObject):
         ) -> _T:
             pass
 
+        # Phase 2: список свежих версий Telegram Desktop для рандомизации.
+        # Источник: github.com/telegramdesktop/tdesktop/releases — v5.16.0 (2025-07)
+        # по v6.8.2 (2026-05). ~40 версий. Обновлять при выпуске новых версий.
+        TELEGRAM_DESKTOP_VERSIONS: typing.ClassVar[List[str]] = [
+            "6.8.2", "6.8.1", "6.8.0",
+            "6.7.8", "6.7.7", "6.7.6", "6.7.5", "6.7.4", "6.7.3", "6.7.2", "6.7.1", "6.7.0",
+            "6.6.4", "6.6.3", "6.6.2", "6.6.1", "6.6.0",
+            "6.5.1", "6.5.0",
+            "6.4.4", "6.4.3", "6.4.2", "6.4.1", "6.4.0",
+            "6.3.10", "6.3.9", "6.3.8", "6.3.7", "6.3.6", "6.3.4", "6.3.3", "6.3.2", "6.3.1", "6.3.0",
+            "6.2.6", "6.2.5", "6.2.4", "6.2.3", "6.2.2", "6.2.0",
+            "6.1.4", "6.1.3", "6.1.2", "6.1.1", "6.1.0",
+            "6.0.3", "6.0.2", "6.0.1", "6.0.0",
+            "5.16.6", "5.16.5", "5.16.4", "5.16.3", "5.16.2", "5.16.1", "5.16.0",
+        ]
+
+        @classmethod
+        def _generate_tdesktop_app_version(cls, unique_id: str = None) -> str:
+            """Генерирует версию Telegram Desktop из списка свежих.
+
+            Если задан `unique_id` — детерминированно (sha1-based pick), иначе random.
+            Возвращает строку вида "X.Y.Z x64" (TDesktop всегда x64 на Win/macOS/Linux).
+
+            Источник идеи: Paramon/opentele commit `de639ac` + `41f3ea5`.
+            """
+            import hashlib
+            import random as _random
+
+            versions = cls.TELEGRAM_DESKTOP_VERSIONS
+            if unique_id:
+                byteid = unique_id.encode("utf-8")
+                hash_id = int(hashlib.sha1(byteid).hexdigest(), 16)
+                version = versions[hash_id % len(versions)]
+            else:
+                version = _random.choice(versions)
+            return f"{version} x64"
+
         @classmethod
         def Generate(cls: Type[_T], system: str = None, unique_id: str = None) -> _T:
 
@@ -437,7 +476,11 @@ class API(BaseObject):
             else:
                 deviceInfo = LinuxDevice.RandomDevice(unique_id)
 
-            return cls(device_model=deviceInfo.model, system_version=deviceInfo.version)
+            return cls(
+                device_model=deviceInfo.model,
+                system_version=deviceInfo.version,
+                app_version=cls._generate_tdesktop_app_version(unique_id),
+            )
 
     class TelegramAndroid(APIData):
         """
@@ -457,9 +500,10 @@ class API(BaseObject):
 
         api_id = 6
         api_hash = "eb06d4abfb49dc3eeb1aeb98ae0f581e"
-        device_model = "Samsung SM-G998B"
-        system_version = "SDK 31"
-        app_version = "8.4.1 (2522)"
+        # Phase 2: aligned with 2026 flagships + Android 16 (SDK 36).
+        device_model = "Samsung SM-S938"  # Galaxy S25 Ultra
+        system_version = "SDK 36"
+        app_version = "12.6.0 (6500)"
         lang_code = "en"
         system_lang_code = "en-US"
         lang_pack = "android"
@@ -482,9 +526,10 @@ class API(BaseObject):
 
         api_id = 21724
         api_hash = "3e0cb5efcd52300aec5994fdfc5bdc16"
-        device_model = "Samsung SM-G998B"
-        system_version = "SDK 31"
-        app_version = "8.4.1 (2522)"
+        # Phase 2: TelegramAndroidX shares fingerprint family with TelegramAndroid.
+        device_model = "Samsung SM-S938"  # Galaxy S25 Ultra
+        system_version = "SDK 36"
+        app_version = "12.6.0 (6500)"
         lang_code = "en"
         system_lang_code = "en-US"
         lang_pack = "android"
@@ -509,9 +554,11 @@ class API(BaseObject):
         # api_hash         = "7245de8e747a0d6fbe11f7cc14fcc0bb"
         api_id = 10840
         api_hash = "33c45224029d59cb3ad0c16134215aeb"
-        device_model = "iPhone 13 Pro Max"
-        system_version = "14.8.1"
-        app_version = "8.4"
+        # Phase 2: aligned with current iOS Telegram release-12.7 (May 2026) +
+        # iPhone 17 Pro Max + iOS 26.
+        device_model = "iPhone 17 Pro Max"
+        system_version = "26.0"
+        app_version = "12.7"
         lang_code = "en"
         system_lang_code = "en-US"
         lang_pack = "ios"
