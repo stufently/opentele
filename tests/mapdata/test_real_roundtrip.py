@@ -126,7 +126,7 @@ def test_mapdata_with_synthetic_keys_roundtrip(tmp_path: Path) -> None:
     md._searchSuggestionsKey = FileKey(0x7070707070707070)
     md._recentHashtagsAndBotsKey = FileKey(0x9999999999999999)
     md._exportSettingsKey = FileKey(0xAAAAAAAAAAAAAAAA)
-    # _settingsKey already non-zero by default (hardcoded magic) — see notes.
+    md._settingsKey = FileKey(0xEEEEEEEEEEEEEEEE)  # Phase 1.0.1: was magic default, now FileKey(0).
 
     # Phase 1.5 new keys
     md._roundPlaceholder = FileKey(0xBBBBBBBBBBBBBBBB)

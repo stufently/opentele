@@ -212,12 +212,13 @@ class Storage(BaseObject):
         # prepare for encryption
         size = toEncrypt.size()
 
-        # Phase 1.0.1: canonical encoded dataLen is >= 4 (it includes the 4-byte
-        # size header itself). For the empty-MapData edge case (size == 0) we
-        # emit dataLen=4 so DecryptLocal's `dataLen < 4` guard accepts it. This
-        # removed the need for the upstream `_settingsKey=FileKey(1851671142505648812)`
-        # magic which existed only to pad the encrypted descriptor past this
-        # guard.
+        # Phase 1.0.1: minimal valid upstream-readable encoding requires
+        # dataLen >= 4 (it includes the 4-byte size header itself — see
+        # TDesktop storage_file_utilities.cpp `dataLen < sizeof(uint32)` guard).
+        # For the empty-MapData edge case (size == 0) we emit dataLen=4 so
+        # both upstream and `DecryptLocal` accept it. This removed the need
+        # for the upstream `_settingsKey=FileKey(1851671142505648812)` magic
+        # which existed only to pad the encrypted descriptor past this guard.
         if size == 0:
             size = 4
             toEncrypt = QByteArray(b"\x00\x00\x00\x00")

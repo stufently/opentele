@@ -7,7 +7,7 @@ Phase 5 deferred the upstream ``_settingsKey = FileKey(1851671142505648812)`` ha
 
 ### Fixed
 - **Removed upstream ``_settingsKey = FileKey(1851671142505648812)`` magic** from ``MapData.__init__``. The constant existed only to pad the encrypted descriptor past AES-IGE256's "data must be multiple of 16 bytes" requirement when the rest of MapData was empty. Default ``_settingsKey`` is now plain ``FileKey(0)``.
-- **``Storage.PrepareEncrypted`` AES alignment for empty payloads**: when ``data.size() == 0`` the function now encodes the canonical ``dataLen=4`` size marker (which is what ``DecryptLocal``'s ``dataLen < 4`` guard requires) and pads to a 16-byte AES block. Empty ``MapData`` (no lskType keys, no drafts, no bot storages) now writes and reads back correctly.
+- **``Storage.PrepareEncrypted`` AES alignment for empty payloads**: when ``data.size() == 0`` the function now encodes the minimal valid upstream-readable ``dataLen=4`` size marker (which is what both upstream TDesktop and ``DecryptLocal``'s ``dataLen < 4`` guard require) and pads to a 16-byte AES block. Empty ``MapData`` (no lskType keys, no drafts, no bot storages) now writes and reads back correctly.
 
 ### Tests
 - ``test_settingsKey_default_is_zero_no_more_magic`` — pins new default.
