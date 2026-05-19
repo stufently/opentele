@@ -1,6 +1,38 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2026-05-19 — opentele-ng Phase 2 (2026 device fingerprints)
+
+Phase 2 brings device/OS/app-version fingerprints up to **May 2026**: 7 months past Paramon's 2025-10 baseline, 4 years past upstream `thedemons/opentele` (2022).
+
+### Added
+- **`API.TelegramDesktop._generate_tdesktop_app_version(unique_id=None)`** — random or deterministic (sha1-based by `unique_id`) Telegram Desktop version picker. Source list `TELEGRAM_DESKTOP_VERSIONS` covers v5.16.0 (Jul 2025) through v6.8.2 (May 2026), ~55 versions. Source: Paramon/opentele patterns (`de639ac` + `41f3ea5`), adapted with 2026 release data.
+- `iOSDevice` proper class name; `iOSDeivce` kept as alias for backward compat (upstream typo).
+- `AndroidDevice.device_models_by_sdk` — Dict[str, List[str]] mapping SDK 33-37 to realistic devices supporting that Android version (Ehekatech pattern).
+- 25 new tests covering modern device fingerprints + version generation (`test_devices_modern.py`, `test_api_app_versions.py`).
+
+### Changed
+- **macOS**: dropped 10.x–13.x (EOL). Now: 14.x Sonoma, 15.x Sequoia, **26.x Tahoe** (Sept 2025+).
+- **macOS devices**: dropped pre-M1 Intel Macs (no macOS 14+ support). Added M2, M3, M4, **M5/M5 Pro/M5 Max** (Oct 2025 / Mar 2026), MacBook Air M5 (Spring 2026).
+- **iOS**: dropped 12-17 (legacy). Now: **iOS 18** (Apple Intelligence, Sep 2024+) and **iOS 26** (Liquid Glass redesign, Sep 2025+, Apple skipped 19-25 numbering).
+- **iOS devices**: dropped iPhone 11 and below. Added **iPhone 17 / 17 Pro / 17 Pro Max / iPhone Air** (Sep 2025), iPhone 16/16e (Sep 2024), 15 series; kept 14 / 13 Pro Max / SE 3rd gen for compatibility.
+- **Android SDK**: dropped SDK 23-32 (Android 6-12). Now: SDK 33-37 (Android 13 → Android 17 beta).
+- **Android devices**: added 2024-2026 flagships — **Galaxy S25 series + S25 Edge + S25 FE** (Jan-Sep 2025), **Galaxy S26 series** (Mar 11, 2026), **Pixel 10 / Pro / Pro XL** (Aug 2025), **OnePlus 12/13**, **Xiaomi 14 Pro / 15 / 15 Pro**.
+- **Windows**: dropped 7/8/8.1 (EOL). Now: Windows 11, Windows 10.
+- **`API.TelegramDesktop.app_version`**: `3.4.3 x64` → `6.8.2 x64`.
+- **`API.TelegramAndroid.app_version`**: `8.4.1 (2522)` → `12.6.0 (6500)`; `device_model`: `Samsung SM-G998B` (S21) → `Samsung SM-S938` (S25 Ultra); `system_version`: `SDK 31` → `SDK 36`.
+- **`API.TelegramAndroidX.app_version`**: same modern Galaxy S25 fingerprint.
+- **`API.TelegramIOS.app_version`**: `8.4` → `12.7`; `device_model`: `iPhone 13 Pro Max` → `iPhone 17 Pro Max`; `system_version`: `14.8.1` → `26.0`.
+- `TelegramDesktop.Generate(unique_id=...)` now produces random/deterministic `app_version` from the v5.16-v6.8 list, not the hardcoded default.
+
+### Sources
+- Paramon/opentele commits: `2fb902c`, `1cf069a`, `c0d8085`, `6e69836`, `41f3ea5`, `de639ac`
+- Telegram Desktop releases: `github.com/telegramdesktop/tdesktop/releases` (v5.16.0 → v6.8.2)
+- Apple device identifiers: `gist.github.com/adamawolf/3048717` (iPhone18,1–iPhone18,4 confirmed)
+- Apple M5 / M5 Pro / M5 Max: Wikipedia (Oct 2025 / Mar 2026)
+- Samsung Galaxy S26: Wikipedia (Mar 11, 2026; Android 16 / OneUI 8.5)
+- Android API levels: `apilevels.com` (SDK 36 = Android 16 stable, SDK 37 = Android 17 beta)
+
 ## [0.1.1] - 2026-05-19 — opentele-ng Phase 1.5 (review fixes)
 
 After three independent AI code reviews (Codex, Cursor, Gemini), Phase 1's "fresh tdata read" implementation had wire format mismatches with upstream Telegram Desktop `storage_account.cpp`. Phase 1.5 fixes them.
