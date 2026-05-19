@@ -59,6 +59,8 @@ class MapData(BaseObject):  # nocov
         # botStorages — map [PeerId -> FileKey], не single key. Источник: TDesktop.
         self._botStoragesMap: Dict[PeerId, FileKey] = {}
         self._botStoragesNotReadMap: Dict[PeerId, bool] = {}
+        # lskPrefs — добавлен в Phase 1.5 после ревью (Codex обнаружил по C++ источнику).
+        self._prefsKey = FileKey(0)
 
     def read(self, localKey: td.AuthKey, legacyPasscode: QByteArray) -> None:
 
@@ -142,6 +144,7 @@ class MapData(BaseObject):  # nocov
         mediaLastPlaybackPositions = 0
         botStoragesMap: typing.Dict[PeerId, FileKey] = {}
         botStoragesNotReadMap: typing.Dict[PeerId, bool] = {}
+        prefsKey = 0
 
         is_finished = False
 
@@ -276,6 +279,10 @@ class MapData(BaseObject):  # nocov
                     botStoragesMap[bs_peerId] = bs_key
                     botStoragesNotReadMap[bs_peerId] = True
 
+            elif keyType == lskType.lskPrefs:
+                # no data tag — payload: uint64 prefsKey. Источник: TDesktop.
+                prefsKey = map.stream.readUInt64()
+
             else:
                 logging.warning(f"Unknown key type in encrypted map: {keyType}")
 
@@ -316,6 +323,7 @@ class MapData(BaseObject):  # nocov
         self._mediaLastPlaybackPositions = mediaLastPlaybackPositions
         self._botStoragesMap = botStoragesMap
         self._botStoragesNotReadMap = botStoragesNotReadMap
+        self._prefsKey = prefsKey
         self._oldMapVersion = mapData.version
 
     def prepareToWrite(self) -> td.Storage.EncryptedDescriptor:
@@ -378,6 +386,8 @@ class MapData(BaseObject):  # nocov
         if len(self._botStoragesMap) > 0:
             # uint32 type + uint32 count + N × (uint64 key + uint64 peerId)
             mapSize += sizeof(uint32) * 2 + len(self._botStoragesMap) * sizeof(uint64) * 2
+        if self._prefsKey:
+            mapSize += sizeof(uint32) + sizeof(uint64)
 
         mapData = td.Storage.EncryptedDescriptor(mapSize)
         stream = mapData.stream
@@ -477,6 +487,9 @@ class MapData(BaseObject):  # nocov
             for peerId, fileKey in self._botStoragesMap.items():
                 stream.writeUInt64(fileKey)
                 stream.writeUInt64(PeerId(peerId).Serialize())
+        if self._prefsKey:
+            stream.writeUInt32(lskType.lskPrefs)
+            stream.writeUInt64(self._prefsKey)
 
         return mapData
 

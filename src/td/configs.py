@@ -336,11 +336,12 @@ class lskType(int):  # nocov
     lskCustomEmojiKeys = 0x17  # no data
     lskSearchSuggestions = 0x18  # no data
     lskWebviewTokens = 0x19  # data: QByteArray bots, QByteArray other
-    # Новые ключи для Telegram Desktop 5.x-6.x (источник: RobertAzovski/opentele)
+    # Новые ключи для Telegram Desktop 5.x-6.x (источник: RobertAzovski/opentele + Phase 1.5 review)
     lskRoundPlaceholder = 0x1A  # no data
     lskInlineBotsDownloads = 0x1B  # no data
     lskMediaLastPlaybackPositions = 0x1C  # no data
-    lskBotStorages = 0x1D  # data: PeerId botId
+    lskBotStorages = 0x1D  # data: PeerId botId (map: count + pairs)
+    lskPrefs = 0x1E  # no data — добавлен в Phase 1.5 после ревью трёх AI
 
 
 class BotTrustFlag(int):  # nocov
