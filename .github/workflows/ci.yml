@@ -40,4 +40,6 @@ jobs:
           pip install pytest pytest-cov pytest-asyncio
 
       - name: Run tests (excluding live tdata_test.py)
-        run: pytest -v --tb=short --ignore=tests/tdata_test.py --cov=src --cov-report=term-missing tests/
+        run: |
+          pytest -v --tb=short --ignore=tests/tdata_test.py \
+            --cov=src --cov-report=term-missing tests/

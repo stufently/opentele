@@ -1,6 +1,34 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2026-05-19 — opentele-ng Phase 4 (test infrastructure / TDD safety net)
+
+Phase 4 builds the safety net required before Phase 5 can drop PyQt for a pure-Python QDataStream rewrite. **48 new tests** — golden bytes for every QDataStream primitive, property-based fuzzing via hypothesis (~1000 random cases per run), and real `TDesktop.SaveTData → load` roundtrips through `MapData.prepareToWrite()`.
+
+### Added
+- **`tests/qdatastream/`** (3 files, 40 tests):
+  - `test_primitives.py` (21 tests) — golden byte layouts for `writeUInt8/16/32/64`, `writeInt32/64` (two's complement), status semantics (`Ok`/`ReadPastEnd`). Verifies Qt_5_1 big-endian, fixed sizes (uint32 always 4 bytes, uint64 always 8 bytes).
+  - `test_qbytearray.py` (11 tests) — `QByteArray` 4-byte size prefix, null-marker (`0xFFFFFFFF` = default-constructed), empty payload, binary payloads with null bytes, large 10KB roundtrip, two-`QByteArray` stream layout (lskWebviewTokens pattern).
+  - `test_property_based.py` (8 tests) — `hypothesis` fuzzing: uint64/int32 lists, mixed-type streams, QByteArray with random binary up to 4KB. ~1000 cases per test invocation.
+- **`tests/mapdata/test_real_roundtrip.py`** (8 tests) — real `TDesktop.SaveTData(tmp_path)` → fresh `TDesktop(basePath=tmp_path)`:
+  - empty roundtrip
+  - synthetic scalar lskType keys (`_locationsKey`, `_trustedBotsKey`, ..., and Phase 1.5 keys `_prefsKey`/`_roundPlaceholder`/`_inlineBotsDownloads`/`_mediaLastPlaybackPositions`)
+  - `_webviewStorageToken*` QByteArray payloads byte-identical
+  - `_botStoragesMap` Dict[PeerId, FileKey]
+  - `_draftsMap` / `_draftCursorsMap`
+  - documents `_settingsKey = FileKey(1851671142505648812)` magic — actually load-bearing: empty `EncryptedDescriptor` produces 0-byte payload that fails `tgcrypto.ige256_encrypt` with "data must be multiple of 16 bytes"; the magic gives ≥12 bytes so AES padding works. Phase 5 task: replace with `td.Storage.RandomGenerate(8)` or pad empty maps to AES block.
+- **`requirements-test.txt`** — pinned dev deps: `pytest ≥7`, `pytest-cov ≥4`, `pytest-asyncio ≥0.21`, `hypothesis ≥6`, `ruff ≥0.5`.
+- `Dockerfile.test` now copies `docs/` so QR docs tests don't break.
+
+### Coverage
+- `src/td/` coverage: **95%** (gate ≥85% planned for Phase 5 CI).
+- Total tests: 98 → **146** (+48).
+- All green on Python 3.10/3.11/3.12/3.13/3.14 Docker matrix.
+
+### Phase 5 readiness
+- Every `QDataStream` operation `src/td/` uses is covered by goldens or property tests.
+- Pure-Python rewrite in Phase 5 must produce byte-identical output for these tests **without any test-code modification** — that's the acceptance criterion.
+
 ## [0.3.0] - 2026-05-19 — opentele-ng Phase 3 (multi-account + kwargs + nuitka + QR docs + linter)
 
 Phase 3 picks up the QoL fixes from `snakechilds/opentele-nuitka` and `Ehekatech/opentele-tg`, plus replaces the broken upstream pylint workflow with ruff. The 3-AI prep review (Codex) corrected scope before implementation:
