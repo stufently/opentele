@@ -58,7 +58,7 @@ This means:
 - All 168 existing Phase 4 tests pass **without modification** — this was
   the safety-net contract of Phase 4 (40 goldens + property-based fuzzing
   + real ``MapData`` roundtrips). Verified on Python 3.10/3.11/3.12/3.13/3.14.
-- ``opentele.td`` package coverage: **87%** (gate 75% — passes).
+- ``opentele.td`` package coverage: **76.70%** (gate 75% — passes; Phase 4 was 78%, slight drop expected due to new 769-line qdatastream.py with error-handling branches not exercised by valid tdata fixtures).
 - ``pip install opentele-ng`` installs without PyQt6 in transitive deps.
 - ``ruff check src/ tests/`` clean.
 
