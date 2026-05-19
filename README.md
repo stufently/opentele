@@ -1,28 +1,27 @@
 <!-- vim: syntax=Markdown -->
 
-# opentele
+# opentele-ng
+
+> **opentele-ng** — modern fork of [thedemons/opentele](https://github.com/thedemons/opentele) for **Python 3.10 – 3.14** (including 3.13 / 3.14). Reads current Telegram Desktop 5.x – 6.x tdata format with all 2024-2025 storage keys (`lskRoundPlaceholder`, `lskInlineBotsDownloads`, `lskMediaLastPlaybackPositions`, `lskBotStorages`). Migrated to PyQt6 and `tgcrypto-pyrofork`. Import name remains `opentele` for drop-in compatibility.
+
+## Install
+
+```bash
+pip install opentele-ng
+```
+
+```python
+from opentele.td import TDesktop
+from opentele.tl import TelegramClient
+```
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/thedemons/opentele/main/opentele.png" alt="logo" width="180"/>
-<br><br>
-<a href="https://pypi.org/project/opentele/"><img alt="pypi version" src="https://img.shields.io/pypi/v/opentele?logo=pypi&logoColor=%232d93c1"/></a>
-<a href="https://pypi.org/project/opentele/"><img alt="pypi status" src="https://img.shields.io/pypi/status/opentele?color=%2331c754&logo=pypi&logoColor=%232d93c1"/></a>
-<a href="https://opentele.readthedocs.io/"><img alt="documentation" src="https://img.shields.io/readthedocs/opentele.svg?color=%2331c754&logo=readthedocs"/></a>
-<a href="https://codecov.io/gh/thedemons/opentele">
-<img src="https://img.shields.io/codecov/c/github/thedemons/opentele?color=%2331c754&label=codecov&logo=codecov&token=H2IWGEJ5LN"/>
-</a>
-<a href="https://github.com/thedemons/opentele/actions/workflows/package.yml"><img alt="workflow tests" src="https://img.shields.io/github/workflow/status/thedemons/opentele/package?logo=github&color=%2331c754"/></a>
-<a href="https://github.com/thedemons/opentele/issues"><img alt="issues" src="https://img.shields.io/github/issues/thedemons/opentele?color=%2331c754&logo=github"/></a>
-<a href="https://github.com/thedemons/opentele/commits/main"><img alt="github last commit" src="https://img.shields.io/github/last-commit/thedemons/opentele?color=%2331c754&logo=github"/></a>
-<a href="https://github.com/thedemons/opentele/commits/main"><img alt="github commits" src="https://img.shields.io/github/commit-activity/m/thedemons/opentele?logo=github"/></a>
-<a href="https://pypi.org/project/opentele/"><img alt="pypi installs" src="https://img.shields.io/pypi/dm/opentele?label=installs&logo=docusign&color=%2331c754"/></a>
-<a href="https://en.wikipedia.org/wiki/MIT_License"><img alt="pypi license" src="https://img.shields.io/pypi/l/opentele?color=%2331c754&logo=gitbook&logoColor=white"/></a>
-<a href="https://github.com/psf/black"><img alt="code format" src="https://img.shields.io/badge/code%20style-black-000000.svg?logo=python&logoColor=%232d93c1"/></a>
 </p>
 
 <br>
 
-A **Python Telegram API Library** for converting between **tdata** and **telethon** sessions, with built-in **official Telegram APIs**. [**Read the documentation**](https://opentele.readthedocs.io/en/latest/documentation/telegram-desktop/tdesktop/).
+A **Python Telegram API Library** for converting between **tdata** and **telethon** sessions, with built-in **official Telegram APIs**. [**Read the upstream documentation**](https://opentele.readthedocs.io/en/latest/documentation/telegram-desktop/tdesktop/).
 
 # NOTICE
 Unfortunately, due to the lack of interest, I can no longer maintain this project and keep it up-to-date with the latest version of Telegram Desktop and Telethon.
