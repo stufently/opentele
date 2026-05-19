@@ -179,11 +179,12 @@ class MapData(BaseObject):  # nocov
                 recentStickersKeyOld = map.stream.readUInt64()
 
             elif keyType == lskType.lskBackgroundOldOld:
-                # TO BE ADDED
+                # Соответствует C++ оригиналу:
                 # map.stream >> (Window::Theme::IsNightMode()
-                #     ? legacyBackgroundKeyNight
-                #     : legacyBackgroundKeyDay);
-                map.stream >> legacyBackgroundKeyDay
+                #     ? legacyBackgroundKeyNight : legacyBackgroundKeyDay);
+                # В upstream Python-портe была неверная строка `map.stream >> name`,
+                # которая в Python это no-op `__rshift__`, плюс name был undefined.
+                legacyBackgroundKeyDay = map.stream.readUInt64()
 
             elif keyType == lskType.lskBackgroundOld:
                 legacyBackgroundKeyDay = map.stream.readUInt64()
