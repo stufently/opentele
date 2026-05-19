@@ -34,8 +34,10 @@ class MapData(BaseObject):  # nocov
         self._featuredCustomEmojiKey = FileKey(0)
         self._archivedCustomEmojiKey = FileKey(0)
         self._searchSuggestionsKey = FileKey(0)
-        self._webviewStorageTokenBots = FileKey(0)
-        self._webviewStorageTokenOther = FileKey(0)
+        # В TDesktop это QByteArray (token data), не FileKey. Источник:
+        # storage_account.cpp dev: `lskWebviewTokens = 0x19, // data: QByteArray bots, QByteArray other`
+        self._webviewStorageTokenBots = QByteArray()
+        self._webviewStorageTokenOther = QByteArray()
         self._savedGifsKey = FileKey(0)
         self._recentStickersKeyOld = FileKey(0)
         self._legacyBackgroundKeyDay = FileKey(0)
@@ -124,8 +126,8 @@ class MapData(BaseObject):  # nocov
         featuredCustomEmojiKey = 0
         archivedCustomEmojiKey = 0
         searchSuggestionsKey = 0
-        webviewStorageTokenBots = 0
-        webviewStorageTokenOther = 0
+        webviewStorageTokenBots = QByteArray()
+        webviewStorageTokenOther = QByteArray()
         savedGifsKey = 0
         legacyBackgroundKeyDay = 0
         legacyBackgroundKeyNight = 0
@@ -244,10 +246,11 @@ class MapData(BaseObject):  # nocov
                 searchSuggestionsKey = map.stream.readUInt64()
 
             elif keyType == lskType.lskWebviewTokens:
-                # data: QByteArray bots, QByteArray other — но в текущем формате
-                # tdesktop'а это два uint64 файл-ключа.
-                webviewStorageTokenBots = map.stream.readUInt64()
-                webviewStorageTokenOther = map.stream.readUInt64()
+                # data: QByteArray bots, QByteArray other
+                # Источник: TDesktop storage_account.cpp dev branch, case lskWebviewTokens.
+                # Phase 1 init commit ошибочно реализовал как два uint64 — исправлено.
+                map.stream >> webviewStorageTokenBots
+                map.stream >> webviewStorageTokenOther
 
             # Новые ключи Telegram Desktop 5.x-6.x (источник: RobertAzovski)
             elif keyType == lskType.lskRoundPlaceholder:
@@ -347,8 +350,13 @@ class MapData(BaseObject):  # nocov
             mapSize += sizeof(uint32) + 3 * sizeof(uint64)
         if self._searchSuggestionsKey:
             mapSize += sizeof(uint32) + sizeof(uint64)
-        if self._webviewStorageTokenBots or self._webviewStorageTokenOther:
-            mapSize += sizeof(uint32) + 2 * sizeof(uint64)
+        if not self._webviewStorageTokenBots.isEmpty() or not self._webviewStorageTokenOther.isEmpty():
+            # uint32 key + 2 × QByteArray (4-byte length prefix + payload каждый)
+            mapSize += (
+                sizeof(uint32)
+                + td.Serialize.bytearraySize(self._webviewStorageTokenBots)
+                + td.Serialize.bytearraySize(self._webviewStorageTokenOther)
+            )
         # Новые ключи Telegram Desktop 5.x-6.x (источник: RobertAzovski)
         if self._roundPlaceholder:
             mapSize += sizeof(uint32) + sizeof(uint64)
@@ -436,10 +444,10 @@ class MapData(BaseObject):  # nocov
             stream.writeUInt32(lskType.lskSearchSuggestions)
             stream.writeUInt64(self._searchSuggestionsKey)
 
-        if self._webviewStorageTokenBots or self._webviewStorageTokenOther:
+        if not self._webviewStorageTokenBots.isEmpty() or not self._webviewStorageTokenOther.isEmpty():
             stream.writeUInt32(lskType.lskWebviewTokens)
-            stream.writeUInt64(self._webviewStorageTokenBots)
-            stream.writeUInt64(self._webviewStorageTokenOther)
+            stream << self._webviewStorageTokenBots
+            stream << self._webviewStorageTokenOther
 
         # Новые ключи Telegram Desktop 5.x-6.x (источник: RobertAzovski)
         if self._roundPlaceholder:

@@ -54,15 +54,18 @@ def test_account_module_has_read_branch_for_all_new_lskTypes() -> None:
 
 def test_lskWebviewTokens_does_not_break_loop() -> None:
     """RobertAzovski conflict artifact: ветка lskWebviewTokens не должна ставить
-    is_finished = True (это обрывало чтение последующих ключей)."""
+    is_finished = True (это обрывало чтение последующих ключей).
+    Также не должна быть пустой — должно быть чтение QByteArray (по TDesktop format)."""
     src = inspect.getsource(account_module)
-    # Грубый, но рабочий чек: между маркером lskWebviewTokens и следующим маркером
-    # (next elif/else) не должно быть is_finished = True.
     idx = src.find("lskType.lskWebviewTokens")
     assert idx >= 0
-    # Берём фрагмент до 500 символов после маркера — это покроет тело ветки.
     snippet = src[idx : idx + 500]
-    # Проверяем, что в этом фрагменте есть readUInt64 (то есть данные читаются).
-    assert "readUInt64" in snippet, (
-        "lskWebviewTokens branch must read two uint64 (bots, other), not just break loop"
+    # is_finished = True больше не должно быть в этой ветке (был conflict-artifact).
+    assert "is_finished = True" not in snippet.split("elif")[0], (
+        "lskWebviewTokens branch must not set is_finished — that broke read loop"
+    )
+    # Должно быть чтение QByteArray (>> operator). Wire format уточнён в Phase 1.5
+    # после ревью трёх AI и сверки с TDesktop storage_account.cpp.
+    assert ">> webviewStorageToken" in snippet, (
+        "lskWebviewTokens branch must read two QByteArray (bots, other) via stream >>"
     )
