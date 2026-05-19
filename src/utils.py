@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import warnings
 
 from . import debug
@@ -8,6 +9,16 @@ from typing import Coroutine, Tuple, Type, Callable, TypeVar, Optional, List, An
 from types import FunctionType
 
 import abc
+
+
+def _extend_class_strict_mode() -> bool:
+    """OPENTELE_EXTEND_STRICT — управляет поведением @extend_class при конфликте.
+
+    Default: strict (TypeError) — поймать реальные коллизии с Telethon API.
+    Set to "0" / "false" / "no" для soft mode (RuntimeWarning, продолжаем).
+    """
+    value = os.environ.get("OPENTELE_EXTEND_STRICT", "1").strip().lower()
+    return value not in ("0", "false", "no", "off", "")
 
 APP_VERSION = 3004000
 TDF_MAGIC = b"TDF$"
@@ -131,16 +142,16 @@ class extend_class(object):  # nocov
 
                         # if not override this attribute
                         if not override.isOverride(attributeValue):
-                            # Fail-soft: вместо raise BaseException гасим в warning.
-                            # На Python 3.13+ строгий raise ломает легитимные расширения
-                            # (dunder-новинки PEP 749, новые слоты Telethon и т.п.).
-                            warnings.warn(
+                            # Strict by default — поймать реальные коллизии (e.g. с
+                            # Telethon API). Soft mode — opt-in через env.
+                            message = (
                                 f"extend_class: attribute conflict for "
                                 f"{attributeName!r} on {base.__name__}; "
-                                f"keeping base value. Use @override to replace.",
-                                RuntimeWarning,
-                                stacklevel=2,
+                                f"keeping base value. Use @override to replace."
                             )
+                            if _extend_class_strict_mode():
+                                raise TypeError(message)
+                            warnings.warn(message, RuntimeWarning, stacklevel=2)
                             crossDelete[attributeName] = attributeValue
 
             [newAttributes.pop(cross) for cross in crossDelete]
