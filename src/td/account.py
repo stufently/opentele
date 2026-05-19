@@ -349,6 +349,15 @@ class MapData(BaseObject):  # nocov
             mapSize += sizeof(uint32) + sizeof(uint64)
         if self._webviewStorageTokenBots or self._webviewStorageTokenOther:
             mapSize += sizeof(uint32) + 2 * sizeof(uint64)
+        # Новые ключи Telegram Desktop 5.x-6.x (источник: RobertAzovski)
+        if self._roundPlaceholder:
+            mapSize += sizeof(uint32) + sizeof(uint64)
+        if self._inlineBotsDownloads:
+            mapSize += sizeof(uint32) + sizeof(uint64)
+        if self._mediaLastPlaybackPositions:
+            mapSize += sizeof(uint32) + sizeof(uint64)
+        if self._botStorages:
+            mapSize += sizeof(uint32) + sizeof(uint64)
 
         mapData = td.Storage.EncryptedDescriptor(mapSize)
         stream = mapData.stream
@@ -431,6 +440,20 @@ class MapData(BaseObject):  # nocov
             stream.writeUInt32(lskType.lskWebviewTokens)
             stream.writeUInt64(self._webviewStorageTokenBots)
             stream.writeUInt64(self._webviewStorageTokenOther)
+
+        # Новые ключи Telegram Desktop 5.x-6.x (источник: RobertAzovski)
+        if self._roundPlaceholder:
+            stream.writeUInt32(lskType.lskRoundPlaceholder)
+            stream.writeUInt64(self._roundPlaceholder)
+        if self._inlineBotsDownloads:
+            stream.writeUInt32(lskType.lskInlineBotsDownloads)
+            stream.writeUInt64(self._inlineBotsDownloads)
+        if self._mediaLastPlaybackPositions:
+            stream.writeUInt32(lskType.lskMediaLastPlaybackPositions)
+            stream.writeUInt64(self._mediaLastPlaybackPositions)
+        if self._botStorages:
+            stream.writeUInt32(lskType.lskBotStorages)
+            stream.writeUInt64(self._botStorages)
 
         return mapData
 
