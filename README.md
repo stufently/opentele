@@ -25,7 +25,7 @@ See [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md) for upstream and contributor credit
 
 ## Status
 
-Phase 1 + 1.5 of the modernization: install + install + load fresh tdata. Phase 4 (golden roundtrip tests) and Phase 5 (drop PyQt for pure-Python QDataStream → `opentele-ng 1.0.0`) are upcoming. See [CHANGELOG.md](CHANGELOG.md).
+Phase 1 + 1.5 of modernization: package installs and loads current Telegram Desktop 5.x – 6.x tdata without data loss across Python 3.10 – 3.13 (3.14 experimental). Phase 4 (golden roundtrip tests) and Phase 5 (drop PyQt for pure-Python QDataStream → `opentele-ng 1.0.0`) are upcoming. See [CHANGELOG.md](CHANGELOG.md).
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/thedemons/opentele/main/opentele.png" alt="logo" width="180"/>

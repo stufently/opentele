@@ -46,7 +46,7 @@ After three independent AI code reviews (Codex, Cursor, Gemini), Phase 1's "fres
 
 ### Fixed
 - `src/td/account.py:186` — невалидный Python `map.stream >> legacyBackgroundKeyDay` в обработке `lskBackgroundOldOld` заменён на корректный `legacyBackgroundKeyDay = map.stream.readUInt64()`. (источник: Snowing)
-- `src/td/account.py` `lskWebviewTokens` — conflict-resolution артефакт (`is_finished = True` вместо чтения двух uint64) теперь корректно читает `webviewStorageTokenBots` и `webviewStorageTokenOther` парой `readUInt64()`. До фикса любой ключ после `lskWebviewTokens` в tdata игнорировался.
+- `src/td/account.py` `lskWebviewTokens` — conflict-resolution артефакт (`is_finished = True` вместо чтения данных) теперь корректно читает `webviewStorageTokenBots` и `webviewStorageTokenOther`. До фикса любой ключ после `lskWebviewTokens` в tdata игнорировался. **Note:** в Phase 1 init wire format был ошибочно реализован как два `readUInt64()` — это исправлено в Phase 1.5 (v0.1.1) на два `QByteArray` после сверки с TDesktop C++ source.
 
 ## [v1.15](https://pypi.org/project/opentele/1.15/) - 2022-01-27
 
