@@ -36,7 +36,11 @@ from typing import (
     Union,
 )
 
-from PyQt6.QtCore import (
+from .. import tl
+from ..api import *
+from ..exception import *
+from ..utils import *
+from .qdatastream import (
     QBuffer,
     QByteArray,
     QDataStream,
@@ -45,11 +49,6 @@ from PyQt6.QtCore import (
     QIODevice,
     QSysInfo,
 )
-
-from .. import tl
-from ..api import *
-from ..exception import *
-from ..utils import *
 
 APP_VERSION = 3004000
 TDF_MAGIC = b"TDF$"

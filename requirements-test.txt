@@ -3,3 +3,7 @@ pytest-cov>=4
 pytest-asyncio>=0.21
 hypothesis>=6
 ruff>=0.5
+# PyQt6 is kept only as a TEST-time dependency: tests/qdatastream/* use it as
+# the byte-identity oracle against opentele-ng's pure-Python QDataStream
+# replacement (src/td/qdatastream.py). Runtime opentele-ng does NOT need PyQt6.
+PyQt6>=6.6

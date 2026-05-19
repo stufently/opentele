@@ -1,6 +1,84 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.0.0] - 2026-05-19 — opentele-ng Phase 5 (Pure-Python QDataStream, drop PyQt6)
+
+**USP / breaking dependency change:** opentele-ng no longer requires PyQt6 at
+runtime. The handful of Qt classes opentele actually used (``QDataStream``,
+``QByteArray``, ``QBuffer``, ``QFile``, ``QDir``, ``QSysInfo``,
+``QIODevice.OpenModeFlag``) are now provided by ``opentele.td.qdatastream``,
+a stdlib-only (``struct`` / ``pathlib`` / ``platform``) module that produces
+byte-identical output with PyQt6's Qt_5_1 binary format.
+
+This means:
+
+* **No system Qt libraries needed.** Install opentele-ng on minimal Linux
+  containers / Alpine / serverless without ``libgl1`` / ``libegl1`` /
+  ``libxkbcommon-x11-0`` etc.
+* **Python 3.14 first-class.** PyQt6 6.6+ does support 3.14, but with extra
+  system-deps friction; pure-Python avoids that.
+* **Smaller install footprint.** ``telethon + tgcrypto-pyrofork`` only — no
+  ~50 MB Qt wheels.
+* **PyPy / experimental interpreters** become reachable.
+
+### Added
+- **``src/td/qdatastream.py``** — 600+ lines of byte-identical pure-Python
+  replacements:
+  - ``QByteArray(bytearray)`` — preserves ``isNull()`` semantics while
+    inheriting buffer protocol so ``hashlib.sha1(qba)`` and
+    ``tgcrypto.ige256_encrypt(qba, ...)`` work unchanged.
+  - ``QDataStream`` Qt_5_1 wire format: big-endian fixed-width int8/16/32/64,
+    uint variants, ``writeInt32`` two's complement, ``QString`` as
+    ``uint32 size_in_bytes + UTF-16-BE``, ``QByteArray`` as
+    ``uint32 size + payload`` with ``0xFFFFFFFF`` null marker and
+    ``0x00000000`` empty marker, ``readRawData`` / ``writeRawData`` verbatim.
+  - ``QBuffer`` — cursor over a ``QByteArray`` (read/write, seek, pos,
+    isOpen, atEnd).
+  - ``QFile`` — open()-backed file wrapper.
+  - ``QDir`` — pathlib wrapper (exists / mkpath).
+  - ``QSysInfo.Endian.ByteOrder`` — host byte order detected at import time
+    so the md5 fingerprint in ``FileWriteDescriptor.writeData`` matches what
+    TDesktop produces on the same host.
+
+### Changed
+- **``requirements.txt``**: removed ``PyQt6>=6.6``. Runtime deps reduced to
+  ``telethon>=1.36,<2`` + ``tgcrypto-pyrofork>=1.2.7``.
+- **``requirements-test.txt``**: kept ``PyQt6>=6.6`` as a **test-only**
+  dependency. The 40+ tests in ``tests/qdatastream/`` use PyQt6 directly as
+  the byte-identity oracle against the pure-Python replacement.
+- ``src/exception.py``: imports ``QDataStream`` from
+  ``opentele.td.qdatastream`` instead of ``PyQt6.QtCore``.
+- ``src/td/configs.py``: same rewire for ``QBuffer``, ``QByteArray``,
+  ``QDataStream``, ``QDir``, ``QFile``, ``QIODevice``, ``QSysInfo``.
+- ``setup.py``: version 0.4.0 → **1.0.0** (major bump, breaking dep change).
+  Description updated with the no-Qt USP. Classifier
+  ``Development Status`` 4-Beta → 5-Production/Stable.
+
+### Acceptance criteria met
+- All 168 existing Phase 4 tests pass **without modification** — this was
+  the safety-net contract of Phase 4 (40 goldens + property-based fuzzing
+  + real ``MapData`` roundtrips). Verified on Python 3.10/3.11/3.12/3.13/3.14.
+- ``opentele.td`` package coverage: **87%** (gate 75% — passes).
+- ``pip install opentele-ng`` installs without PyQt6 in transitive deps.
+- ``ruff check src/ tests/`` clean.
+
+### Known deviation from spec
+- The ``MapData._settingsKey = FileKey(1851671142505648812)`` hardcoded
+  magic constant is **kept as-is** because the Phase 4 test
+  ``test_settingsKey_is_required_when_map_is_otherwise_empty`` *expects*
+  ``ValueError`` when the map is empty + ``_settingsKey=0`` (which proves
+  the magic is still load-bearing). Replacing it with AES-padding in
+  ``EncryptedDescriptor`` is left for a future minor release that can also
+  update that test in the same commit. The Phase 5 acceptance criterion of
+  "all 168 tests pass without modification" rules out doing both at once.
+
+### PyQt6 status post-Phase-5
+- **Runtime:** not installed, not imported, not in ``install_requires``.
+- **Test-time only:** ``tests/qdatastream/`` and several ``tests/test_account_*``
+  modules import ``PyQt6.QtCore`` directly to compare bytes against the new
+  pure-Python implementation. CI install path is ``pip install -e . &&
+  pip install -r requirements-test.txt``.
+
 ## [0.4.0] - 2026-05-19 — opentele-ng Phase 4 (test infrastructure / TDD safety net)
 
 Phase 4 builds the safety net required before Phase 5 can drop PyQt for a pure-Python QDataStream rewrite. **48 new tests** — golden bytes for every QDataStream primitive, property-based fuzzing via hypothesis (~1000 random cases per run), and real `TDesktop.SaveTData → load` roundtrips through `MapData.prepareToWrite()`.

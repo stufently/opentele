@@ -1,3 +1,2 @@
-PyQt6>=6.6
 telethon>=1.36,<2
 tgcrypto-pyrofork>=1.2.7

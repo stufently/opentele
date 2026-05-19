@@ -4,7 +4,7 @@ import inspect
 import types
 import typing
 
-from PyQt6.QtCore import QDataStream
+from opentele.td.qdatastream import QDataStream
 
 
 class OpenTeleException(BaseException):  # nocov
