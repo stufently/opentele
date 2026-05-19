@@ -96,9 +96,10 @@ class extend_class(object):  # nocov
 
     def __new__(cls, decorated_cls: _TCLS, isOverride: bool = False) -> _TCLS:
 
-        # check if decorated_cls really is a class (type)
-        if not isinstance(cls, type):
-            raise BaseException(
+        # check if decorated_cls really is a class (type). Upstream проверял `cls`
+        # (метакласс — всегда type) — проверка была бесполезной. Phase 1.5 fix.
+        if not isinstance(decorated_cls, type):
+            raise TypeError(
                 "@extend_class decorator is only for classes, not functions"
             )
 
