@@ -52,11 +52,13 @@ class MapData(BaseObject):  # nocov
         self._exportSettingsKey = FileKey(0)
         self._installedMasksKey = FileKey(0)
         self._recentMasksKey = FileKey(0)
-        # Новые ключи Telegram Desktop 5.x-6.x (источник: RobertAzovski)
+        # Новые ключи Telegram Desktop 5.x-6.x (источник: RobertAzovski + Phase 1.5)
         self._roundPlaceholder = FileKey(0)
         self._inlineBotsDownloads = FileKey(0)
         self._mediaLastPlaybackPositions = FileKey(0)
-        self._botStorages = FileKey(0)
+        # botStorages — map [PeerId -> FileKey], не single key. Источник: TDesktop.
+        self._botStoragesMap: Dict[PeerId, FileKey] = {}
+        self._botStoragesNotReadMap: Dict[PeerId, bool] = {}
 
     def read(self, localKey: td.AuthKey, legacyPasscode: QByteArray) -> None:
 
@@ -134,11 +136,12 @@ class MapData(BaseObject):  # nocov
         userSettingsKey = 0
         recentHashtagsAndBotsKey = 0
         exportSettingsKey = 0
-        # Новые ключи Telegram Desktop 5.x-6.x (источник: RobertAzovski)
+        # Новые ключи Telegram Desktop 5.x-6.x (источник: RobertAzovski + Phase 1.5 review)
         roundPlaceholder = 0
         inlineBotsDownloads = 0
         mediaLastPlaybackPositions = 0
-        botStorages = 0
+        botStoragesMap: typing.Dict[PeerId, FileKey] = {}
+        botStoragesNotReadMap: typing.Dict[PeerId, bool] = {}
 
         is_finished = False
 
@@ -263,8 +266,15 @@ class MapData(BaseObject):  # nocov
                 mediaLastPlaybackPositions = map.stream.readUInt64()
 
             elif keyType == lskType.lskBotStorages:
-                # data: PeerId botId — храним FileKey-указатель на блок
-                botStorages = map.stream.readUInt64()
+                # map: uint32 count + count × (FileKey uint64, PeerId uint64)
+                # Источник: TDesktop storage_account.cpp dev, case lskBotStorages.
+                count = map.stream.readUInt32()
+                for _ in range(count):
+                    bs_key = FileKey(map.stream.readUInt64())
+                    bs_peerIdSerialized = map.stream.readUInt64()
+                    bs_peerId = PeerId.FromSerialized(bs_peerIdSerialized)
+                    botStoragesMap[bs_peerId] = bs_key
+                    botStoragesNotReadMap[bs_peerId] = True
 
             else:
                 logging.warning(f"Unknown key type in encrypted map: {keyType}")
@@ -304,7 +314,8 @@ class MapData(BaseObject):  # nocov
         self._roundPlaceholder = roundPlaceholder
         self._inlineBotsDownloads = inlineBotsDownloads
         self._mediaLastPlaybackPositions = mediaLastPlaybackPositions
-        self._botStorages = botStorages
+        self._botStoragesMap = botStoragesMap
+        self._botStoragesNotReadMap = botStoragesNotReadMap
         self._oldMapVersion = mapData.version
 
     def prepareToWrite(self) -> td.Storage.EncryptedDescriptor:
@@ -364,8 +375,9 @@ class MapData(BaseObject):  # nocov
             mapSize += sizeof(uint32) + sizeof(uint64)
         if self._mediaLastPlaybackPositions:
             mapSize += sizeof(uint32) + sizeof(uint64)
-        if self._botStorages:
-            mapSize += sizeof(uint32) + sizeof(uint64)
+        if len(self._botStoragesMap) > 0:
+            # uint32 type + uint32 count + N × (uint64 key + uint64 peerId)
+            mapSize += sizeof(uint32) * 2 + len(self._botStoragesMap) * sizeof(uint64) * 2
 
         mapData = td.Storage.EncryptedDescriptor(mapSize)
         stream = mapData.stream
@@ -459,9 +471,12 @@ class MapData(BaseObject):  # nocov
         if self._mediaLastPlaybackPositions:
             stream.writeUInt32(lskType.lskMediaLastPlaybackPositions)
             stream.writeUInt64(self._mediaLastPlaybackPositions)
-        if self._botStorages:
+        if len(self._botStoragesMap) > 0:
             stream.writeUInt32(lskType.lskBotStorages)
-            stream.writeUInt64(self._botStorages)
+            stream.writeUInt32(len(self._botStoragesMap))
+            for peerId, fileKey in self._botStoragesMap.items():
+                stream.writeUInt64(fileKey)
+                stream.writeUInt64(PeerId(peerId).Serialize())
 
         return mapData
 
