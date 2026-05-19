@@ -202,42 +202,34 @@ def test_mapdata_webview_qbytearray_roundtrip(tmp_path: Path) -> None:
     assert bytes(rmd._webviewStorageTokenOther) == other_payload
 
 
-def test_settingsKey_hardcoded_magic_is_load_bearing(tmp_path: Path) -> None:
-    """Phase 4 TDD safety net for the ``_settingsKey = FileKey(1851671142505648812)``
-    hardcoded magic in ``MapData.__init__`` (account.py:48).
+def test_settingsKey_default_is_zero_no_more_magic(tmp_path: Path) -> None:
+    """Phase 1.0.1: the upstream ``_settingsKey = FileKey(1851671142505648812)``
+    magic was removed. Default ``_settingsKey`` is now plain ``FileKey(0)``.
 
-    What we found while writing this test:
+    History:
 
-    1. The magic constant is present and non-zero by default — pinned here so
-       any future refactor that changes it has to update this test.
-    2. The comment "MUST HAVE OR CAN'T WRITE MAPDATA" is *partially* correct:
-       the constant is load-bearing **only when the rest of MapData is empty**.
-       Reason: ``EncryptedDescriptor(size=0)`` produces a 0-byte payload that
-       fails AES-IGE256 encryption ("Data size must match a multiple of 16
-       bytes"). The ``_settingsKey`` write contributes 12 bytes, getting us
-       above the 16-byte minimum after the size prefix.
-    3. As soon as *any* other lskType slot is non-zero (drafts, stickers,
-       Phase 1.5 keys, …) ``_settingsKey`` is no longer needed for write to
-       succeed — proven by setting ``_settingsKey=0`` and some other field.
-
-    Phase 5 plan (deferred): replace the constant with a derived value via
-    ``td.Storage.RandomGenerate(8)`` OR gate ``prepareToWrite()`` so it pads
-    empty maps to ≥16 bytes itself. Either change MUST keep this test green.
+    * Phase 4 documented that the magic existed only to pad the encrypted
+      descriptor past AES-IGE256's "data must be a multiple of 16 bytes"
+      requirement when the map was otherwise empty.
+    * Phase 1.0.1 moved that padding into ``Storage.PrepareEncrypted`` itself
+      (size == 0 → dataLen=4 + AES block padding) so the magic is no longer
+      needed. The default is now 0 and reads back as 0.
     """
-    # Probe 1: the magic constant exists and matches the documented value.
     md_default = MapData(basePath=str(tmp_path))
-    assert int(md_default._settingsKey) == 1851671142505648812, (
-        "Default magic constant changed — update Phase 5 plan and re-check "
-        "compatibility with on-disk tdata produced by upstream opentele."
+    assert int(md_default._settingsKey) == 0, (
+        "Default _settingsKey should be 0 after Phase 1.0.1 magic removal. "
+        "If non-zero again, check whether the AES padding fix in "
+        "Storage.PrepareEncrypted was reverted."
     )
 
-    # Probe 2: zeroing _settingsKey AND keeping at least one other key
-    # non-zero → write+read still works (so the magic is not absolutely
-    # required, only as a fallback when the map is otherwise empty).
+
+def test_settingsKey_zero_works_alongside_other_keys(tmp_path: Path) -> None:
+    """``_settingsKey=0`` + another non-zero lskType round-trips intact.
+    This was true before Phase 1.0.1 too — kept as regression guard."""
     base = str(tmp_path / "tdata_no_settings_key")
     tdesk = _build_tdesktop_with_dummy_account(base)
     tdesk.mainAccount.MapData._settingsKey = FileKey(0)
-    tdesk.mainAccount.MapData._prefsKey = FileKey(0x42)  # something else non-zero
+    tdesk.mainAccount.MapData._prefsKey = FileKey(0x42)
     tdesk.SaveTData(base)
 
     loaded = TDesktop(basePath=base)
@@ -246,19 +238,26 @@ def test_settingsKey_hardcoded_magic_is_load_bearing(tmp_path: Path) -> None:
     assert int(loaded.mainAccount.MapData._prefsKey) == 0x42
 
 
-def test_settingsKey_is_required_when_map_is_otherwise_empty(tmp_path: Path) -> None:
-    """Document the failure mode: empty MapData + ``_settingsKey=0`` cannot
-    be written by the current implementation. Phase 5 must fix this.
+def test_empty_mapdata_with_zero_settingsKey_now_writes_successfully(tmp_path: Path) -> None:
+    """Phase 1.0.1 regression test: empty MapData + ``_settingsKey=0`` previously
+    raised ``ValueError: Data size must match a multiple of 16 bytes`` from
+    ``tgcrypto.ige256_encrypt``.
+
+    After the AES padding fix in ``Storage.PrepareEncrypted`` (dataLen=4 +
+    block-align pad), this now succeeds: the encrypted descriptor is padded
+    to a full 16-byte AES block (with dataLen=4 as the canonical "empty
+    payload" marker) so ``DecryptLocal`` accepts it on the read side.
     """
     base = str(tmp_path / "tdata_empty_no_settings")
     tdesk = _build_tdesktop_with_dummy_account(base)
-    tdesk.mainAccount.MapData._settingsKey = FileKey(0)
+    # MapData is otherwise empty and _settingsKey is 0 by default now.
+    assert int(tdesk.mainAccount.MapData._settingsKey) == 0
 
-    # ``ValueError: Data size must match a multiple of 16 bytes`` from
-    # ``tgcrypto.ige256_encrypt`` — see write path traceback documented in
-    # the test above.
-    with pytest.raises((ValueError, Exception)):
-        tdesk.SaveTData(base)
+    tdesk.SaveTData(base)  # must not raise
+
+    loaded = TDesktop(basePath=base)
+    assert loaded.isLoaded()
+    assert int(loaded.mainAccount.MapData._settingsKey) == 0
 
 
 def test_mapdata_drafts_roundtrip(tmp_path: Path) -> None:

@@ -43,10 +43,10 @@ class MapData(BaseObject):  # nocov
         self._legacyBackgroundKeyDay = FileKey(0)
         self._legacyBackgroundKeyNight = FileKey(0)
 
-        # self._settingsKey = FileKey(0)
-        # ! TO BE ADDED
-        self._settingsKey = FileKey(1851671142505648812)
-        """MUST HAVE OR CAN'T WRITE MAPDATA, I'M WOKRING TO FIX THIS"""
+        # Phase 1.0.1: removed hardcoded `FileKey(1851671142505648812)` upstream magic.
+        # That value only existed to pad the EncryptedDescriptor to >= 16 bytes for AES
+        # block alignment; we now pad correctly in `Storage.PrepareEncrypted` instead.
+        self._settingsKey = FileKey(0)
 
         self._recentHashtagsAndBotsKey = FileKey(0)
         self._exportSettingsKey = FileKey(0)

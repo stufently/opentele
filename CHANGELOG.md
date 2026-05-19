@@ -1,6 +1,20 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.0.1] - 2026-05-19 — opentele-ng Phase 5.1 (_settingsKey magic removed)
+
+Phase 5 deferred the upstream ``_settingsKey = FileKey(1851671142505648812)`` hardcoded magic constant fix because doing both the code change AND the test change would have violated Phase 4's "168 tests without modification" acceptance contract. With Phase 5 shipped, 1.0.1 closes that loop.
+
+### Fixed
+- **Removed upstream ``_settingsKey = FileKey(1851671142505648812)`` magic** from ``MapData.__init__``. The constant existed only to pad the encrypted descriptor past AES-IGE256's "data must be multiple of 16 bytes" requirement when the rest of MapData was empty. Default ``_settingsKey`` is now plain ``FileKey(0)``.
+- **``Storage.PrepareEncrypted`` AES alignment for empty payloads**: when ``data.size() == 0`` the function now encodes the canonical ``dataLen=4`` size marker (which is what ``DecryptLocal``'s ``dataLen < 4`` guard requires) and pads to a 16-byte AES block. Empty ``MapData`` (no lskType keys, no drafts, no bot storages) now writes and reads back correctly.
+
+### Tests
+- ``test_settingsKey_default_is_zero_no_more_magic`` — pins new default.
+- ``test_empty_mapdata_with_zero_settingsKey_now_writes_successfully`` — Phase 4's "this fails" test is now "this succeeds".
+- ``test_settingsKey_zero_works_alongside_other_keys`` — kept as regression guard.
+- 186 tests total (was 185), coverage 77.34% on ``opentele.td``.
+
 ## [1.0.0] - 2026-05-19 — opentele-ng Phase 5 (Pure-Python QDataStream, drop PyQt6)
 
 **USP / breaking dependency change:** opentele-ng no longer requires PyQt6 at

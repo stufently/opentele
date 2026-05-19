@@ -211,6 +211,17 @@ class Storage(BaseObject):
 
         # prepare for encryption
         size = toEncrypt.size()
+
+        # Phase 1.0.1: canonical encoded dataLen is >= 4 (it includes the 4-byte
+        # size header itself). For the empty-MapData edge case (size == 0) we
+        # emit dataLen=4 so DecryptLocal's `dataLen < 4` guard accepts it. This
+        # removed the need for the upstream `_settingsKey=FileKey(1851671142505648812)`
+        # magic which existed only to pad the encrypted descriptor past this
+        # guard.
+        if size == 0:
+            size = 4
+            toEncrypt = QByteArray(b"\x00\x00\x00\x00")
+
         fullSize = size
         if fullSize & 0x0F:
             fullSize += 0x10 - (fullSize & 0x0F)
