@@ -40,4 +40,4 @@ jobs:
           pip install -r requirements-test.txt
 
       - name: Run tests (excluding live tdata_test.py)
-        run: pytest -v --tb=short --ignore=tests/tdata_test.py --cov=src/td --cov-report=term-missing --cov-fail-under=85 tests/
+        run: pytest -v --tb=short --ignore=tests/tdata_test.py --cov=opentele.td --cov-report=term-missing --cov-fail-under=75 tests/

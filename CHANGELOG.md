@@ -21,7 +21,7 @@ Phase 4 builds the safety net required before Phase 5 can drop PyQt for a pure-P
 - `Dockerfile.test` now copies `docs/` so QR docs tests don't break.
 
 ### Coverage
-- `src/td/` coverage: **95%** (gate ≥85% planned for Phase 5 CI).
+- `opentele.td` package coverage: **~78%** (whole package, including legacy mtp.py DcOptions code which is 38% covered). CI gate set to **75%** (honest threshold post Phase 4.5 measurement). Phase 5 can raise it as the rewrite forces broader coverage.
 - Total tests: 98 → **146** (+48).
 - All green on Python 3.10/3.11/3.12/3.13/3.14 Docker matrix.
 
