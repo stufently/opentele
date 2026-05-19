@@ -13,3 +13,5 @@ claude/
 CURRENT_SESSION_TASKS.md
 TASKS.md
 TODO.md
+.coverage
+htmlcov/
