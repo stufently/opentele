@@ -1,0 +1,24 @@
+ARG PY_VERSION=3.13
+FROM python:${PY_VERSION}-slim
+
+# PyQt6 runtime deps for Linux
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libgl1 \
+    libegl1 \
+    libxkbcommon-x11-0 \
+    libdbus-1-3 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY requirements.txt setup.py README.md MANIFEST.in ./
+COPY src/ ./src/
+COPY tests/ ./tests/
+
+RUN pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir -e .
+RUN pip install --no-cache-dir pytest pytest-cov pytest-asyncio
+
+# tdata_test.py — live integration test, requires real Telegram auth, excluded from CI
+CMD ["pytest", "-v", "--tb=short", "--ignore=tests/tdata_test.py", "tests/"]
