@@ -12,13 +12,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY requirements.txt setup.py README.md MANIFEST.in ./
+COPY requirements.txt requirements-test.txt setup.py README.md MANIFEST.in ./
 COPY src/ ./src/
 COPY tests/ ./tests/
+COPY docs/ ./docs/
 
 RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -e .
-RUN pip install --no-cache-dir pytest pytest-cov pytest-asyncio ruff
+RUN pip install --no-cache-dir -r requirements-test.txt
 
 # Copy ruff config
 COPY .ruff.toml ./
