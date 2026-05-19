@@ -9,3 +9,7 @@ build/*
 pydoc-markdown.yml
 build_script*
 .generated-files.txt
+claude/
+CURRENT_SESSION_TASKS.md
+TASKS.md
+TODO.md
