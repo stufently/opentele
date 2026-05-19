@@ -20,9 +20,10 @@ def _get_ios_class():
 
 
 def test_macOS_system_versions_includes_tahoe_26() -> None:
-    """macOS 26 Tahoe (Sep 2025+) должна быть в списке версий."""
+    """macOS 26 Tahoe (Sep 2025+) должна быть в списке версий.
+    Phase 2.5: формат "macOS X.Y" (с префиксом — TDesktop SystemVersionPretty)."""
     versions = macOSDevice.system_versions
-    assert any(v.startswith("26.") for v in versions), (
+    assert any("26." in v for v in versions), (
         f"macOS 26 (Tahoe) missing from system_versions; first 5: {versions[:5]}"
     )
 
@@ -30,7 +31,7 @@ def test_macOS_system_versions_includes_tahoe_26() -> None:
 def test_macOS_system_versions_includes_sequoia_15() -> None:
     """macOS 15 Sequoia (Sep 2024+) тоже должна быть."""
     versions = macOSDevice.system_versions
-    assert any(v.startswith("15.") for v in versions), (
+    assert any("15." in v for v in versions), (
         f"macOS 15 (Sequoia) missing: {versions[:8]}"
     )
 
@@ -45,9 +46,13 @@ def test_macOS_device_models_include_apple_silicon_m4_or_m5() -> None:
 
 
 def test_macOS_drops_legacy_pre_sonoma() -> None:
-    """macOS 10.x — EOL; не должно быть в списке."""
+    """macOS 10.x – 13.x — EOL; не должно быть в списке.
+    Phase 2.5: проверяем по "macOS 10.", "macOS 11." и т.д. (с префиксом)."""
     versions = macOSDevice.system_versions
-    legacy = [v for v in versions if v.startswith("10.") or v.startswith("11.") or v.startswith("12.") or v.startswith("13.")]
+    legacy = [
+        v for v in versions
+        if any(p in v for p in ("macOS 10.", "macOS 11.", "macOS 12.", "macOS 13."))
+    ]
     assert not legacy, (
         f"Legacy macOS versions still present (10.x-13.x): {legacy}"
     )

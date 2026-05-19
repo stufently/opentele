@@ -975,49 +975,71 @@ class macOSDevice(GeneralDesktopDevice):
     #
     # Remark: https://www.innerfence.com/howto/apple-ios-devices-dates-versions-instruction-sets
 
-    # Phase 2: только macOS 14 Sonoma+ совместимое железо (Apple Silicon M1+
-    # и последние Intel Macs). Старые модели удалены — на них macOS 14+ не идёт.
-    # Source: Apple — macOS Tahoe (26) requires M1 or newer + Intel iMac Pro 2017+,
-    # iMac 2019+, Mac mini 2018+, MacBook Air 2020+, MacBook Pro 2018+.
+    # Phase 2.5: clean human-readable names ВМЕСТО identifier+скобки. Список
+    # обходит FromIdentifier в __gen__ через флаг _skip_from_identifier_for_clean.
+    # Telegram Desktop в `initConnection.device_model` отправляет marketing name
+    # ("MacBook Pro M5"), а не board ID ("Mac17,2").
+    # Source: Apple Support / EveryMac / AppleDB (Mac17,x — M5 series).
     device_models = [
-        # M5 (2025-2026) — identifiers TBD officially, names verified
-        "MacBookPro18,5 (M5 Max)",
-        "MacBookPro18,4 (M5 Pro)",
-        "MacBookPro18,3 (M5)",
-        "MacBookAir17,2 (M5 15-inch)",
-        "MacBookAir17,1 (M5 13-inch)",
+        # M5 (Oct 2025 – 2026): Mac17,2 = MBP14 M5, Mac17,3-4 = MBA M5,
+        # Mac17,6 = MBP16 M5 Pro, Mac17,7 = MBP14 M5 Pro, Mac17,8 = MBP16 M5 Max,
+        # Mac17,9 = MBP14 M5 Max.
+        "MacBook Pro 14-inch M5 Max",
+        "MacBook Pro 16-inch M5 Max",
+        "MacBook Pro 14-inch M5 Pro",
+        "MacBook Pro 16-inch M5 Pro",
+        "MacBook Pro 14-inch M5",
+        "MacBook Air 15-inch M5",
+        "MacBook Air 13-inch M5",
         # M4 (2024)
-        "Mac16,13 (MacBook Pro M4 Max)",
-        "Mac16,12 (MacBook Air M4 15-inch)",
-        "Mac16,9 (MacBook Air M4 13-inch)",
-        "Mac16,5 (MacBook Pro M4 Pro)",
-        "Mac16,1 (Mac mini M4)",
+        "MacBook Pro 16-inch M4 Max",
+        "MacBook Pro 14-inch M4 Pro",
+        "MacBook Pro 14-inch M4",
+        "MacBook Air 15-inch M4",
+        "MacBook Air 13-inch M4",
+        "Mac mini M4 Pro",
+        "Mac mini M4",
+        "iMac 24-inch M4",
         # M3 (2023-2024)
-        "Mac15,13 (MacBook Air M3 13-inch)",
-        "Mac15,3 (MacBook Pro M3 14-inch)",
-        "Mac15,8 (MacBook Pro M3 Pro)",
+        "MacBook Pro 14-inch M3 Max",
+        "MacBook Pro 16-inch M3 Pro",
+        "MacBook Pro 14-inch M3",
+        "MacBook Air 15-inch M3",
+        "MacBook Air 13-inch M3",
+        "iMac 24-inch M3",
         # M2 (2022-2023)
-        "Mac14,5 (MacBook Pro M2 Pro)",
-        "Mac14,2 (MacBook Air M2)",
-        "Mac14,15 (MacBook Air M2 15-inch)",
-        # M1 (2020-2022) — minimum for macOS 26 Tahoe
-        "MacBookPro18,1 (M1 Pro)",
-        "MacBookPro18,2 (M1 Max)",
-        "MacBookAir10,1 (M1)",
-        "Macmini9,1 (M1)",
-        "iMac21,1 (M1)",
+        "MacBook Pro 14-inch M2 Pro",
+        "MacBook Pro 16-inch M2 Max",
+        "MacBook Air 15-inch M2",
+        "MacBook Air 13-inch M2",
+        "Mac mini M2",
+        "Mac Studio M2 Max",
+        # M1 (2020-2022) — minimum для macOS 26 Tahoe (Apple's compatibility list)
+        "MacBook Pro 14-inch M1 Pro",
+        "MacBook Pro 16-inch M1 Max",
+        "MacBook Air M1",
+        "Mac mini M1",
+        "iMac 24-inch M1",
+        # Intel — last generation still supported on macOS Tahoe per Apple:
+        # iMac Pro 2017, iMac 2019/2020, Mac mini 2018, MBA 2020 (Intel), MBP 2018+.
+        "iMac Pro",
+        "iMac (Retina 5K, 27-inch, 2020)",
+        "Mac mini (2018)",
+        "MacBook Pro (16-inch, 2019)",
+        "MacBook Pro (13-inch, 2020)",
     ]
 
-    # Source: Apple — macOS support history.
-    # Phase 2: dropped macOS 10.x – 13.x (EOL or out of support).
-    # Only macOS 14 Sonoma (2023), 15 Sequoia (2024), 26 Tahoe (2025+).
+    # Phase 2.5: восстановлен префикс "macOS " — TDesktop SystemVersionPretty()
+    # возвращает "macOS X.Y". Без префикса fingerprint выглядит регрессивно.
     system_versions = [
         # macOS 26 Tahoe (Sep 2025+)
-        "26.0", "26.1", "26.2", "26.3", "26.4", "26.5",
+        "macOS 26.0", "macOS 26.1", "macOS 26.2", "macOS 26.3", "macOS 26.4", "macOS 26.5",
         # macOS 15 Sequoia (Sep 2024+)
-        "15.0", "15.1", "15.2", "15.3", "15.4", "15.5", "15.6", "15.7",
+        "macOS 15.0", "macOS 15.1", "macOS 15.2", "macOS 15.3",
+        "macOS 15.4", "macOS 15.5", "macOS 15.6", "macOS 15.7",
         # macOS 14 Sonoma (Sep 2023+) — minimum supported in Phase 2
-        "14.0", "14.1", "14.2", "14.3", "14.4", "14.5", "14.6", "14.7",
+        "macOS 14.0", "macOS 14.1", "macOS 14.2", "macOS 14.3",
+        "macOS 14.4", "macOS 14.5", "macOS 14.6", "macOS 14.7",
     ]
 
     deviceList: List[DeviceInfo] = []
@@ -1052,9 +1074,20 @@ class macOSDevice(GeneralDesktopDevice):
 
                 return result
 
+            # Phase 2.5: FromIdentifier нужен только для legacy board IDs формата
+            # "MacBookPro16,4". Современные строки уже clean ("MacBook Pro 14-inch M5")
+            # и должны проходить как есть. Признак: содержат пробел или скобки.
+            def _is_legacy_board_id(s: str) -> bool:
+                # Legacy: "MacBookPro16,4", "iMac20,1" — без пробелов, есть запятая.
+                return "," in s and " " not in s
+
             new_devices_models = []
             for model in cls.device_models:
-                model = cls._CleanAndSimplify(FromIdentifier(model))
+                if _is_legacy_board_id(model):
+                    model = cls._CleanAndSimplify(FromIdentifier(model))
+                else:
+                    # Clean name — оставляем как есть, только _CleanAndSimplify (whitespace).
+                    model = cls._CleanAndSimplify(model)
                 if not model in new_devices_models:
                     new_devices_models.append(model)
 
@@ -5954,12 +5987,13 @@ class AndroidDevice(SystemInfo):
     ]
 
     # Phase 2: modern flagship device list — 2024-2026 Pixel/Samsung/OnePlus/Xiaomi.
-    # Привязка к SDK по поддерживаемой ОС (см. device_models_by_sdk внизу класса).
+    # Phase 2.5: S26 SM-S941/S946/S948, S25 SM-S931/S936/S938 (без overlap).
+    # Naming pattern: SM-S9X1 base, S9X6 plus, S9X8 ultra. SM-S731 = S25 FE.
     device_models_modern = [
-        # 2026 flagships (Android 16/17)
+        # 2026 flagships (Android 16/17) — Galaxy S26 launched March 11, 2026
         "Samsung Galaxy S26 Ultra (SM-S948)",
-        "Samsung Galaxy S26+ (SM-S941)",
-        "Samsung Galaxy S26 (SM-S931)",
+        "Samsung Galaxy S26+ (SM-S946)",
+        "Samsung Galaxy S26 (SM-S941)",
         # 2025 flagships (Android 15/16)
         "Samsung Galaxy S25 Ultra (SM-S938)",
         "Samsung Galaxy S25+ (SM-S936)",
@@ -5982,11 +6016,11 @@ class AndroidDevice(SystemInfo):
         "Xiaomi 15 Pro",
         "Xiaomi 15",
         # 2023 flagships (Android 14)
-        "Samsung Galaxy S23 Ultra",
+        "Samsung Galaxy S23 Ultra (SM-S918)",
         "Google Pixel 8 Pro",
         "Google Pixel 8",
         # 2022 flagships (Android 13)
-        "Samsung Galaxy S22 Ultra",
+        "Samsung Galaxy S22 Ultra (SM-S908)",
         "Google Pixel 7 Pro",
         "Google Pixel 7",
     ]
@@ -5999,8 +6033,8 @@ class AndroidDevice(SystemInfo):
             "Google Pixel 10 Pro",
             "Google Pixel 10",
             "Samsung Galaxy S26 Ultra (SM-S948)",
-            "Samsung Galaxy S26+ (SM-S941)",
-            "Samsung Galaxy S26 (SM-S931)",
+            "Samsung Galaxy S26+ (SM-S946)",
+            "Samsung Galaxy S26 (SM-S941)",
         ],
         "SDK 36": [  # Android 16
             "Google Pixel 10 Pro XL",
@@ -6029,12 +6063,12 @@ class AndroidDevice(SystemInfo):
             "Xiaomi 14 Pro",
         ],
         "SDK 34": [  # Android 14
-            "Samsung Galaxy S23 Ultra",
+            "Samsung Galaxy S23 Ultra (SM-S918)",
             "Google Pixel 8 Pro",
             "Google Pixel 8",
         ],
         "SDK 33": [  # Android 13
-            "Samsung Galaxy S22 Ultra",
+            "Samsung Galaxy S22 Ultra (SM-S908)",
             "Google Pixel 7 Pro",
             "Google Pixel 7",
         ],
@@ -6049,9 +6083,20 @@ class AndroidDevice(SystemInfo):
 
             results: List[DeviceInfo] = []
 
-            for model in cls.device_models:
-                for version in cls.system_versions:
-                    results.append(DeviceInfo(model, version))
+            # Phase 2.5: используем device_models_by_sdk (SDK-aware pairing) —
+            # генерирует реалистичные пары "устройство 2022-2026 ↔ Android 13-17".
+            # Legacy cls.device_models (~4500 моделей 2017-2022) использовать
+            # с SDK 33+ нельзя — Pixel 4 + Android 17 нереалистично.
+            if hasattr(cls, "device_models_by_sdk") and cls.device_models_by_sdk:
+                for sdk, models in cls.device_models_by_sdk.items():
+                    for model in models:
+                        results.append(DeviceInfo(model, sdk))
+            else:
+                # Fallback (если кто-то почистил device_models_by_sdk) —
+                # старый cartesian product.
+                for model in cls.device_models:
+                    for version in cls.system_versions:
+                        results.append(DeviceInfo(model, version))
 
             cls.deviceList = results
 

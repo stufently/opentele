@@ -32,10 +32,17 @@ def test_telegram_android_default_app_version_is_12_plus() -> None:
     assert major >= 12, f"TelegramAndroid default app_version stale: {version}"
 
 
-def test_telegram_androidx_default_app_version_is_12_plus() -> None:
+def test_telegram_androidx_default_app_version_has_tgx_format() -> None:
+    """TelegramAndroidX (Telegram X / TGX) — отдельная нумерация 0.X.Y.Z-arm64-v8a.
+    Phase 2.5: после ревью переведено на правильный TGX pattern (был mainline 12.x)."""
     version = API.TelegramAndroidX.app_version
-    major = _major_version(version)
-    assert major >= 12, f"TelegramAndroidX default app_version stale: {version}"
+    # TGX historic pattern: "0.27.5.1842-arm64-v8a"
+    assert version.startswith("0."), (
+        f"TelegramAndroidX should follow TGX 0.X.Y.Z pattern: {version!r}"
+    )
+    assert "-arm64-v8a" in version or "-arm64-v8a" in version, (
+        f"TelegramAndroidX should include arch suffix: {version!r}"
+    )
 
 
 def test_telegram_ios_default_app_version_is_12_plus() -> None:

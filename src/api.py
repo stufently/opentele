@@ -500,8 +500,9 @@ class API(BaseObject):
 
         api_id = 6
         api_hash = "eb06d4abfb49dc3eeb1aeb98ae0f581e"
-        # Phase 2: aligned with 2026 flagships + Android 16 (SDK 36).
-        device_model = "Samsung SM-S938"  # Galaxy S25 Ultra
+        # Phase 2.5: device_model унифицирован с AndroidDevice.device_models_modern.
+        # Telegram Android в initConnection отправляет marketing name + SM code.
+        device_model = "Samsung Galaxy S25 Ultra (SM-S938)"
         system_version = "SDK 36"
         app_version = "12.6.0 (6500)"
         lang_code = "en"
@@ -526,10 +527,12 @@ class API(BaseObject):
 
         api_id = 21724
         api_hash = "3e0cb5efcd52300aec5994fdfc5bdc16"
-        # Phase 2: TelegramAndroidX shares fingerprint family with TelegramAndroid.
-        device_model = "Samsung SM-S938"  # Galaxy S25 Ultra
+        # Phase 2.5: TelegramAndroidX (Telegram X / TGX) — distinct app_version pattern.
+        # Source: Paramon `c0d8085` — "0.26.3.1668-arm64-v8a". Updated to current line.
+        # Reference: github.com/Telegram-Android-X / TGX historical builds.
+        device_model = "Samsung Galaxy S25 Ultra (SM-S938)"
         system_version = "SDK 36"
-        app_version = "12.6.0 (6500)"
+        app_version = "0.27.5.1842-arm64-v8a"
         lang_code = "en"
         system_lang_code = "en-US"
         lang_pack = "android"
@@ -582,10 +585,12 @@ class API(BaseObject):
         api_id = 2834
         api_hash = "68875f756c9b437a8b916ca3de215815"
         # api_id = 9                                    |
-        # api_hash = "3975f648bb682ee889f35483bc618d1c" | Telegram for macOS uses this api, but it"s unofficial api, why?
-        device_model = "MacBook Pro"
-        system_version = "macOS 12.0.1"
-        app_version = "8.4"
+        # api_hash = "3975f648bb682ee889f35483bc618d1c" | Telegram for macOS uses this api, but it's unofficial api, why?
+        # Phase 2.5: TelegramSwift (macOS Telegram) — current line ≈ 11.x / 12.x.
+        # Reference: github.com/overtake/TelegramSwift releases. Conservative: 11.13.
+        device_model = "MacBook Pro 14-inch M5"
+        system_version = "macOS 26.0"
+        app_version = "11.13"
         lang_code = "en"
         system_lang_code = "en-US"
         lang_pack = "macos"
