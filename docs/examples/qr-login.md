@@ -1,9 +1,10 @@
 # QR-code login
 
 Authorise a new Telegram session via the QR-code shown in the official Telegram
-app (Settings → Devices → Link Desktop Device) **without phone OTP or password
-prompts** in the script. No tdata to import either — `opentele-ng` will create
-the session from scratch on the user's confirmation.
+app (Settings → Devices → Link Desktop Device) **without phone OTP** in the
+script. (2FA cloud-password accounts still need the password — see section
+below.) No tdata to import either — `opentele-ng` will create the session from
+scratch on the user's confirmation.
 
 The flow uses **Telethon** under the hood (`TelegramClient.qr_login`); the
 `opentele.tl.TelegramClient` adds the bridge so the session can later be saved
@@ -91,6 +92,10 @@ async def to_tdata() -> None:
         client,
         flag=CreateNewSession,
         api=desktop_api,
+        # 2FA-protected accounts: pass `password=` so the bridge can
+        # complete `sign_in` after QRLoginToNewClient raises
+        # SessionPasswordNeededError. Without it the conversion fails.
+        password="cloud-password-here",  # or None for non-2FA accounts
     )
 
     tdesk.SaveTData("my_tdata_folder")

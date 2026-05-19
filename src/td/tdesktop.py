@@ -17,7 +17,7 @@ class TDesktop(BaseObject):
     """
     Telegram Desktop client.
     
-    A client can have multiple accounts, up to 3 - according to official Telegram Desktop client.
+    A client can have multiple accounts, up to 6 (for Premium accounts) - according to official Telegram Desktop client.
 
     ### Attributes:
         api (`API`):
