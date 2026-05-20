@@ -23,8 +23,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from PyQt6.QtCore import QByteArray
-
 from opentele.api import API
 from opentele.td import TDesktop
 from opentele.td import shared as td
@@ -37,6 +35,7 @@ from opentele.td.configs import (
     PeerId,
     UserId,
 )
+from PyQt6.QtCore import QByteArray
 
 # ---------------------------------------------------------------------------
 # Helpers

@@ -4,7 +4,6 @@ import subprocess
 import sys
 
 import pytest
-
 from opentele.__main__ import build_parser, main
 
 
