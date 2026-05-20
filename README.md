@@ -2,7 +2,40 @@
 
 # opentele-ng
 
-> **opentele-ng** — modern fork of [thedemons/opentele](https://github.com/thedemons/opentele) for **Python 3.10 – 3.13** (Python 3.14 — experimental, while 3.14 itself is in active development). Reads current Telegram Desktop 5.x – 6.x tdata format with the 2024-2025 storage keys (`lskRoundPlaceholder` 0x1A, `lskInlineBotsDownloads` 0x1B, `lskMediaLastPlaybackPositions` 0x1C, `lskBotStorages` 0x1D as `Dict[PeerId, FileKey]`, `lskPrefs` 0x1E). Migrated to PyQt6 and `tgcrypto-pyrofork`. Import name remains `opentele` for drop-in compatibility.
+> **Modern fork of [thedemons/opentele](https://github.com/thedemons/opentele).**
+> Python 3.10 – 3.14 • **pure-Python runtime, no Qt dependency** •
+> reads current Telegram Desktop 5.x – 6.x tdata format • drop-in
+> `import opentele` compatibility.
+
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+![Python 3.10–3.14](https://img.shields.io/badge/python-3.10%E2%80%933.14-blue)
+![Tests](https://img.shields.io/badge/tests-252%20passing-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-94.8%25-brightgreen)
+![No Qt](https://img.shields.io/badge/runtime-no%20Qt%20dependency-brightgreen)
+
+## Why this fork
+
+Upstream `thedemons/opentele` was last touched in 2022. By mid-2026 it stopped
+working on modern Python (3.13+ broke the metaclass), missed several `lskType`
+keys added to tdata in 2024-2025 (silently dropping data on read), shipped
+stale device fingerprints, and required ~50 MB of PyQt5 wheels just to parse
+binary streams.
+
+`opentele-ng` is a clean-room modernization done over 11 release phases with
+3-AI code review (OpenAI Codex, Cursor, Google Gemini) at every milestone.
+None of the 132 community forks of upstream attempted the pure-Python rewrite —
+this one ships it.
+
+## Highlights
+
+| Phase | What |
+|------|------|
+| **Phase 5** | **Pure-Python `QDataStream` / `QByteArray` / `QFile` / `QBuffer`** — byte-identical to PyQt6 (17 byte-for-byte equivalence tests + 247 integration tests). PyQt6 removed from runtime, install is now `telethon` + `tgcrypto-pyrofork` only. |
+| **Phase 1.5** | Wire-format fixes for `lskWebviewTokens` (QByteArray, not uint64), `lskBotStorages` (`Dict[PeerId, FileKey]` map, not single key), `lskPrefs 0x1E` (missed by every upstream fork — verified against TDesktop C++ source). |
+| **Phase 2** | 2026 device fingerprints: iPhone 17 / Air, M5 / M5 Pro / M5 Max Macs, Galaxy S25 / S26 series, Pixel 10 / 10 Pro / 10 Pro XL, Android SDK 33-37 (Android 13 → 17 beta), macOS 26 Tahoe, iOS 26. Deterministic `_generate_tdesktop_app_version(unique_id)` for stable fingerprints across runs. |
+| **Phase 3** | `kMaxAccounts = 6` (was 3, matches TDesktop's `kPremiumMaxAccounts`). `**kwargs` forward in `FromTelethon` → `QRLoginToNewClient` for `proxy`/`connection`/`timeout`. Nuitka-compatible `sharemethod`. Ruff lint replaces broken upstream pylint workflow. |
+| **Phase 4** | 168 → 247 tests: QDataStream golden bytes, `hypothesis` property-based fuzzing (~1000 cases/run), real `TDesktop.SaveTData → load` roundtrip through `MapData.prepareToWrite()`. |
+| **Phase 1.0.3** | **Security:** 6 DoS guards on attacker-controlled `count` fields in `MapData.read` / `_setMtpAuthorization.readKeys` / account-list. Pre-loop cap by `bytesAvailable() // pair_size` + hard regression tests (no fail-open xfail). |
 
 ## Install
 
@@ -13,107 +46,116 @@ pip install opentele-ng
 ```python
 from opentele.td import TDesktop
 from opentele.tl import TelegramClient
+from opentele.api import API, CreateNewSession
 ```
 
-## Credits
+**Runtime deps:** `telethon>=1.36,<2`, `tgcrypto-pyrofork>=1.2.7`. **No Qt.**
 
-See [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md) for upstream and contributor credits (thedemons, RobertAzovski, Snowing, azamtoiri, hustLer2k, iamlostshe).
+System libraries (`libgl1`, `libegl1`, `libxkbcommon-x11-0`, etc.) are **not**
+required — you can deploy on Alpine, distroless, serverless, or any minimal
+Linux container.
 
-## Configuration
+## Quick start
 
-- `OPENTELE_EXTEND_STRICT=0` — switches `@extend_class` decorator to soft mode (RuntimeWarning instead of TypeError on attribute conflicts). Default: strict.
-
-## Status
-
-Phase 1 + 1.5 of modernization: package installs and loads current Telegram Desktop 5.x – 6.x tdata without data loss across Python 3.10 – 3.13 (3.14 experimental). Phase 4 (golden roundtrip tests) and Phase 5 (drop PyQt for pure-Python QDataStream → `opentele-ng 1.0.0`) are upcoming. See [CHANGELOG.md](CHANGELOG.md).
-
-<p align="center">
-<img src="https://raw.githubusercontent.com/thedemons/opentele/main/opentele.png" alt="logo" width="180"/>
-</p>
-
-<br>
-
-A **Python Telegram API Library** for converting between **tdata** and **telethon** sessions, with built-in **official Telegram APIs**. [**Read the upstream documentation**](https://opentele.readthedocs.io/en/latest/documentation/telegram-desktop/tdesktop/).
-
-# NOTICE
-Unfortunately, due to the lack of interest, I can no longer maintain this project and keep it up-to-date with the latest version of Telegram Desktop and Telethon.
-<br>
-If you have been using opentele for a while, I appreciate it, please consider contributing to the project, ask any questions in [Discussion](https://github.com/thedemons/opentele/discussions) and I'll try to help.
-
-## Features
-- Convert [Telegram Desktop](https://github.com/telegramdesktop/tdesktop) **tdata** sessions to [telethon](https://github.com/LonamiWebs/Telethon) sessions and vice versa.
-- Use **telethon** with [official APIs](#authorization) to avoid bot detection.
-- Randomize [device info](https://opentele.readthedocs.io/en/latest/documentation/authorization/api/#generate) using real data that recognized by Telegram server.
-
-## Dependencies
-
-- [telethon](https://github.com/LonamiWebs/Telethon) - Widely used Telegram's API library for Python.
-- [tgcrypto](https://github.com/pyrogram/tgcrypto) - AES-256-IGE encryption to works with `tdata`.
-- [pyQt5](https://www.riverbankcomputing.com/software/pyqt/) - Used by Telegram Desktop to streams data from files.
-
-## Installation
-- Install from [PyPI](https://pypi.org/project/opentele/):
-```pip title="pip"
-pip install --upgrade opentele
-```
-
-## First Run
-Load TDesktop from tdata folder and convert it to telethon, with a custom API:
 ```python
+import asyncio
+from opentele.api import API, CreateNewSession
 from opentele.td import TDesktop
 from opentele.tl import TelegramClient
-from opentele.api import API, CreateNewSession, UseCurrentSession
-import asyncio
 
-async def main():
-    
-    # Load TDesktop client from tdata folder
-    tdataFolder = r"C:\Users\<username>\AppData\Roaming\Telegram Desktop\tdata"
-    tdesk = TDesktop(tdataFolder)
+async def main() -> None:
+    # 1. Load tdata produced by Telegram Desktop.
+    tdata_path = r"C:\Users\<user>\AppData\Roaming\Telegram Desktop\tdata"
+    tdesk = TDesktop(tdata_path)
 
-    # Using official iOS API with randomly generated device info
-    # print(api) to see more
-    api = API.TelegramIOS.Generate()
+    # 2. Pick an official API (TelegramIOS / TelegramAndroid / TelegramDesktop / TelegramMacOS).
+    #    .Generate() builds a deterministic-or-random device fingerprint.
+    api = API.TelegramIOS.Generate(unique_id="my-host")
 
-    # Convert TDesktop session to telethon client
-    # CreateNewSession flag will use the current existing session to
-    # authorize the new client by `Login via QR code`.
-    client = await tdesk.ToTelethon("newSession.session", CreateNewSession, api)
+    # 3. Convert TDesktop session → Telethon. CreateNewSession links a new
+    #    device via QR code on the existing TDesktop session (no phone OTP).
+    client: TelegramClient = await tdesk.ToTelethon(
+        "new_session.session", CreateNewSession, api
+    )
 
-    # Although Telegram Desktop doesn't let you authorize other
-    # sessions via QR Code (or it doesn't have that feature),
-    # it is still available across all platforms (APIs).
-
-    # Connect and print all logged in devices
-    await client.connect()
-    await client.PrintSessions()
+    async with client:
+        await client.PrintSessions()
 
 asyncio.run(main())
 ```
 
-## Authorization
-**opentele** offers the ability to use **official APIs**, which are used by official apps. You can check that out [here](https://opentele.readthedocs.io/en/latest/documentation/authorization/api/#class-api).
-<br>
-
-According to [Telegram TOS](https://core.telegram.org/api/obtaining_api_id#using-the-api-id): *all accounts that sign up or log in using unofficial Telegram API clients are automatically put under observation to avoid violations of the Terms of Service*.
-<br>
-<br>
-It also uses the **[lang_pack](https://core.telegram.org/method/initConnection)** parameter, of which [telethon can't use](https://github.com/LonamiWebs/Telethon/blob/dd51aea4db90fd255a14e27192e221c70b45e105/telethon/_client/telegrambaseclient.py#L197) because it's for official apps only.
-<br>
-Therefore, **there are no differences** between using opentele and official apps, the server can't tell you apart.
-
-## Incoming Features
-- [x] Writing data to tdata for converting telethon sessions to tdesktop.
-- [x] Random device information for [initConnection](https://core.telegram.org/method/initConnection) to avoid spam-detection.
-- [ ] Add support for [pyrogram](https://github.com/pyrogram/pyrogram).
-- [ ] Develop opentele-tui using [textual](https://github.com/Textualize/textual) for non-experience user.
-
 ## Examples
-The best way to learn anything is by looking at the examples. Am I right?
 
-- Example on [readthedocs](https://opentele.readthedocs.io/en/latest/examples/)
-- Example on [github](./examples)
+- [`docs/examples/qr-login.md`](docs/examples/qr-login.md) — QR-code login flow
+  with 2FA + `**kwargs` proxy forwarding.
+- [`docs/examples/convert-tdata-to-telethon.md`](docs/examples/convert-tdata-to-telethon.md)
+- [`docs/examples/convert-telethon-to-tdata.md`](docs/examples/convert-telethon-to-tdata.md)
+- [`docs/examples/using-official-apis.md`](docs/examples/using-official-apis.md)
 
-## Documentation [![documentation](https://readthedocs.org/projects/opentele/badge/?version=latest&style=flat)](https://opentele.readthedocs.io/)
-- Read documentation on [readthedocs](https://opentele.readthedocs.io/en/latest/documentation/telegram-desktop/tdesktop/)
-- Read documentation on [github](https://github.com/thedemons/opentele/tree/main/docs-github)
+## Configuration
+
+| Env var | Default | Effect |
+|---------|---------|--------|
+| `OPENTELE_EXTEND_STRICT` | `1` | `@extend_class` raises `TypeError` on attribute conflicts. Set to `0` to fall back to `RuntimeWarning` (legacy upstream behaviour). |
+| `OPENTELE_REAL_TDATA_PATH` | unset | When set to an absolute path of a production tdata folder, enables the opt-in real-data smoke test in `tests/integration/test_real_tdata_smoke.py`. CI never sets it. |
+
+## Status
+
+- Latest: **`v1.0.3-dos-fix`** (2026-05-20). Production-ready security release.
+- 252 tests pass on Python 3.10 / 3.11 / 3.12 / 3.13 / 3.14 (Docker matrix +
+  GitHub Actions matrix × Ubuntu / macOS / Windows).
+- `opentele.td` package coverage: **94.83%** (CI gate 90%).
+- See [CHANGELOG.md](CHANGELOG.md) for the full per-release breakdown.
+
+## Security
+
+`opentele-ng` accepts attacker-influenced binary blobs (tdata files from the
+filesystem), and version 1.0.3 added bounded-count guards on every loop that
+reads a `count` field from a decrypted payload. If you find a malformed tdata
+input that bypasses these guards or causes the library to read unbounded
+memory or CPU, please report it privately: see [`SECURITY.md`](SECURITY.md).
+
+## Differences from upstream
+
+- **Import name unchanged** (`import opentele`) — drop-in for code that
+  already uses `thedemons/opentele`.
+- **PyPI dist name is `opentele-ng`** to avoid collision with the original
+  package.
+- **`kMaxAccounts`** is `6` (Telegram's premium limit), not 3.
+- **`@extend_class`** raises on attribute conflicts by default; set
+  `OPENTELE_EXTEND_STRICT=0` for the old warning-only behaviour.
+- **`_settingsKey`** is `FileKey(0)` by default; the upstream
+  `FileKey(1851671142505648812)` magic was removed in 1.0.1 (proper AES
+  block padding added to `Storage.PrepareEncrypted` instead).
+- **`PyQt6` is NOT a runtime dependency** — `opentele.td.qdatastream`
+  provides byte-compatible pure-Python replacements for `QDataStream`,
+  `QByteArray`, `QBuffer`, `QFile`, `QDir`, `QSysInfo`.
+
+## Authorization
+
+`opentele-ng` keeps the upstream's ability to use **official APIs** through
+the `API` class (`API.TelegramDesktop`, `API.TelegramAndroid`,
+`API.TelegramAndroidX`, `API.TelegramIOS`, `API.TelegramMacOS`,
+`API.TelegramWeb_K`, `API.TelegramWeb_Z`).
+
+Per [Telegram Terms of Service](https://core.telegram.org/api/obtaining_api_id#using-the-api-id):
+
+> All accounts that sign up or log in using unofficial Telegram API clients
+> are automatically put under observation to avoid violations of the Terms
+> of Service.
+
+Using an official API id/hash + `lang_pack="tdesktop"` (or `ios`, `android`,
+etc.) makes the session indistinguishable from the corresponding official
+client, which reduces spam-detection risk.
+
+## Credits
+
+See [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md).
+
+## License
+
+MIT (same as upstream). See [LICENSE](LICENSE).
+
+<p align="center">
+<img src="https://raw.githubusercontent.com/thedemons/opentele/main/opentele.png" alt="logo" width="180"/>
+</p>

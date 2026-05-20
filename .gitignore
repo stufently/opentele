@@ -19,3 +19,6 @@ venv/
 opentele_ng.egg-info/
 *.egg-info/
 opentele
+.env
+.env.local
+dist/
