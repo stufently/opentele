@@ -2,7 +2,7 @@
 # opentele-ng — PyPI publish helper (Docker-based).
 #
 # Reads PYPI_API_TOKEN (or TEST_PYPI_API_TOKEN with --test) from .env in the
-# repo root. Builds a sdist + wheel inside a digest-pinned python:3.13-slim
+# repo root. Builds a sdist + wheel inside a digest-pinned python:3.14-slim
 # container (see IMG variable below), runs `twine check`, then uploads via
 # `twine upload`.
 #
@@ -64,8 +64,8 @@ if [[ $dry_run -eq 0 ]]; then
 fi
 
 # Pinned digest for reproducible builds. Refresh manually via:
-#   docker pull python:3.13-slim && docker inspect python:3.13-slim --format='{{index .RepoDigests 0}}'
-IMG="python:3.13-slim@sha256:e544a7fcbdf8555eceda66bf86cafb006c736339f76141918bcb812f3174c00a"
+#   docker pull python:3.14-slim && docker inspect python:3.14-slim --format='{{index .RepoDigests 0}}'
+IMG="python:3.14-slim@sha256:a7185a8e40af01bf891414a4df16ef10fc6000cee460a404a13da9029fe41604"
 
 echo "==> Cleaning build artifacts"
 rm -rf build/ dist/ ./*.egg-info/

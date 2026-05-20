@@ -3,6 +3,23 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-05-20 — Coverage scope, QFile.bytesAvailable, Py3.14 Docker, cleanup
+
+### Changed
+- **Docker base image switched to `python:3.14-slim`** (was `3.13-slim`), digest-pinned to `sha256:a7185a8e…` for reproducibility. The PyPI wheel is still pure-Python and works on Python 3.10–3.14 — the change only affects the GHCR container. `scripts/publish.sh` and `Dockerfile.test` follow the same Py3.14 bump.
+- **Coverage gate scope expanded from `--cov=opentele.td` to `--cov=opentele`**. Gates the WHOLE package, surfacing previously-invisible gaps in `__main__.py` (CLI), `tl/telethon.py`, `api.py`. Threshold lowered to 80% (was 90% on `.td` only) to accommodate `tl/telethon.py`'s 24%-covered QR-login paths that need a live Telegram socket to exercise. The `opentele.td` package itself stays at 94.83%.
+
+### Added
+- **`QFile.bytesAvailable()`** in `src/td/qdatastream.py` — mirrors `QIODevice` contract so `QDataStream` over a `QFile` behaves identically to one over a `QBuffer`. Today's `storage.py` hot path reads files into a `QByteArray` before parsing, so this is consistency hardening rather than a hot-path bug fix — but `_GuardCount` in `account.py` calls `stream.bytesAvailable()`, so any future caller that streams `MapData` from a `QFile` directly would have hit a spurious `TDataReadMapDataFailed`. Caught by Gemini in the 1.2.0 review, deferred to here. **4 new tests** in `tests/qdatastream/test_pure_errors.py`.
+- **CLI integration tests on a real fixture tdata** — `test_cli_info_on_real_fixture_tdata_succeeds` and `test_cli_info_json_on_real_fixture_tdata_parses` build a tdata via `TDesktop.SaveTData()` and invoke `python -m opentele info` as a subprocess. These are the tests that would have caught the 1.1.0 Windows regressions (`types.auth` shadowing and the `MainAccount`→`mainAccount` typo) before they reached users.
+
+### Removed
+- `docs/build/` (72 KB) and `docs/documentation/` (256 KB) — stale upstream documentation that was already excluded from the mkdocs site via `exclude_docs`. Cleaned up the matching exclude entries in `mkdocs.yml`.
+
+### Verified
+- 270 tests pass on Python 3.10–3.14 (was 264; +6 from QFile.bytesAvailable, +2 from CLI fixture tests). Coverage 83.48% on the whole `opentele` package; `opentele.td` subset still at 94.83%.
+- `docker build -t opentele-ng:py314 .` on the new base + smoke `info` on real tdata works end-to-end on Python 3.14.5.
+
 ## [1.2.0] - 2026-05-20 — Docker image + supply-chain hardening + forks watch
 
 ### Fixed (Windows regressions reported on 1.1.0)

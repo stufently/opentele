@@ -116,3 +116,67 @@ def test_ensure_utf8_stdout_does_not_crash_when_unavailable():
         _ensure_utf8_stdout()       # must not raise
     finally:
         sys.stdout = saved
+
+
+# ---------------------------------------------------------------------------
+# Integration: CLI `info` on a real synthetic tdata produced by SaveTData.
+# Catches the class of regressions where the CLI imports OK but blows up at
+# runtime on real data (the 1.1.0 Windows `types.auth` bug).
+# ---------------------------------------------------------------------------
+
+
+def _build_fixture_tdata(tmp_path):
+    """Build a minimal but real tdata folder via TDesktop.SaveTData."""
+    from opentele.api import API
+    from opentele.td import TDesktop
+    from opentele.td.account import Account
+    from opentele.td.auth import AuthKey, AuthKeyType
+    from opentele.td.configs import DcId
+
+    tdesk = TDesktop()
+    tdesk._TDesktop__generateLocalKey()
+    base = str(tmp_path / "tdata")
+    account = Account(owner=tdesk, basePath=base, api=API.TelegramDesktop, index=0)
+    dc_id = DcId(2)
+    user_id = 88884444
+    authkey = AuthKey(b"\xab" * AuthKey.kSize, AuthKeyType.ReadFromFile, dc_id)
+    account._setMtpAuthorizationCustom(dc_id, user_id, [authkey])
+    tdesk._addSingleAccount(account)
+    tdesk.SaveTData(base)
+    return base
+
+
+@pytest.fixture
+def fixture_tdata_base(tmp_path):
+    """Build a fixture tdata once per test using SaveTData. Narrow exception
+    handling: only ImportError (e.g. tgcrypto missing) is acceptable as
+    skippable; logic failures must fail the test, not silently skip."""
+    try:
+        return _build_fixture_tdata(tmp_path)
+    except ImportError as exc:
+        pytest.skip(f"fixture builder dep missing: {exc}")
+
+
+def test_cli_info_on_real_fixture_tdata_succeeds(fixture_tdata_base):
+    """End-to-end smoke: catches regressions like 1.1.0's `types.auth` shadow
+    and `mainAccount` typo. CLI invoked as a subprocess on a tdata produced
+    by ``SaveTData``. Text-mode is checked loosely (exit code + 1 anchor),
+    full structural assertions live in the JSON test below."""
+    res = _run(["info", fixture_tdata_base])
+    assert res.returncode == 0, res.stderr
+    assert "UserId=88884444" in res.stdout, res.stdout
+
+
+def test_cli_info_json_on_real_fixture_tdata_parses(fixture_tdata_base):
+    """JSON output is well-formed and contains the expected structural keys.
+    This is the load-bearing assertion — text mode is presentation, JSON is contract."""
+    res = _run(["info", fixture_tdata_base, "--json"])
+    assert res.returncode == 0, res.stderr
+    payload = json.loads(res.stdout)
+    assert payload["accounts_count"] == 1
+    assert payload["mainAccount_index"] == 0, "MainAccount → mainAccount typo regression"
+    acc = payload["accounts"][0]
+    assert acc["UserId"] == 88884444
+    assert acc["MainDcId"] == 2
+    assert acc["authKey_dcId"] == 2
+    assert isinstance(acc["authKey_sha256"], str) and len(acc["authKey_sha256"]) == 64

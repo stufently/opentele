@@ -40,4 +40,9 @@ jobs:
           pip install -r requirements-test.txt
 
       - name: Run tests (excluding live tdata_test.py)
-        run: pytest -v --tb=short --ignore=tests/tdata_test.py --cov=opentele.td --cov-report=term-missing --cov-fail-under=90 tests/
+        # Coverage scope is the whole `opentele` package, not just `opentele.td`,
+        # so gaps in CLI/tl/api also show up in the report. Gate is 80% (the
+        # extra ~20 points slack accounts for `tl/telethon.py` QR-login paths
+        # that need network and `api.py` device-fingerprint paths exercised by
+        # a separate runtime test).
+        run: pytest -v --tb=short --ignore=tests/tdata_test.py --cov=opentele --cov-report=term-missing --cov-fail-under=80 tests/

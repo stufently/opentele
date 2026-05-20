@@ -41,8 +41,6 @@ nav:
       - QR login: examples/qr-login.md
 
 exclude_docs: |
-  build/
-  documentation/
   README.md
   google09fc260a1115c552.html
 

@@ -493,3 +493,62 @@ def test_QDir_mkpath_creates_nested_dirs(tmp_path: Path) -> None:
     d = QDir(str(tmp_path))
     assert d.mkpath(str(nested)) is True
     assert nested.exists()
+
+
+# ---------------------------------------------------------------------------
+# QFile.bytesAvailable — mirrors QIODevice contract so a QDataStream over a
+# QFile behaves identically to one over a QBuffer (no spurious ReadPastEnd
+# in _GuardCount when streaming MapData straight from disk).
+# ---------------------------------------------------------------------------
+
+
+def test_QFile_bytesAvailable_when_closed_is_zero(tmp_path: Path) -> None:
+    f = QFile(str(tmp_path / "missing.bin"))
+    assert f.bytesAvailable() == 0
+
+
+def test_QFile_bytesAvailable_after_open_equals_size(tmp_path: Path) -> None:
+    p = tmp_path / "data.bin"
+    p.write_bytes(b"hello world!" * 100)  # 1200 bytes
+    f = QFile(str(p))
+    assert f.open(Mode.ReadOnly) is True
+    try:
+        assert f.bytesAvailable() == 1200
+    finally:
+        f.close()
+
+
+def test_QFile_bytesAvailable_decreases_as_we_read(tmp_path: Path) -> None:
+    p = tmp_path / "data.bin"
+    p.write_bytes(b"\x00" * 100)
+    f = QFile(str(p))
+    f.open(Mode.ReadOnly)
+    try:
+        assert f.bytesAvailable() == 100
+        f.read(30)
+        assert f.bytesAvailable() == 70
+        f.read(70)
+        assert f.bytesAvailable() == 0
+    finally:
+        f.close()
+
+
+def test_QFile_bytesAvailable_consistent_with_QBuffer_via_size(tmp_path: Path) -> None:
+    """QFile.bytesAvailable() must mirror the QIODevice contract — same
+    semantics as QBuffer.bytesAvailable(). storage.py currently reads files
+    into a QByteArray and parses via QBuffer (so the QFile path isn't on the
+    hot wire-format path today), but the method exists for callers that may
+    stream directly from disk via _GuardCount.
+    """
+    p = tmp_path / "stream.bin"
+    p.write_bytes(b"\x01\x02\x03\x04\x05\x06\x07\x08")
+    f = QFile(str(p))
+    f.open(Mode.ReadOnly)
+    try:
+        assert f.bytesAvailable() == 8
+        f.read(4)
+        assert f.bytesAvailable() == 4
+        f.read(4)
+        assert f.bytesAvailable() == 0
+    finally:
+        f.close()

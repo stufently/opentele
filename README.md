@@ -128,10 +128,10 @@ asyncio.run(main())
 
 ## Status
 
-- Latest: **`v1.2.0`** (2026-05-20). PyPI: [`opentele-ng`](https://pypi.org/project/opentele-ng/) / Docker: [`ghcr.io/stufently/opentele-ng`](https://ghcr.io/stufently/opentele-ng). Production-ready. 1.2.0 adds the multi-arch Docker image, PEP 740 PyPI attestations, OCI provenance + SBOM, Dependabot, CodeQL, pre-commit hooks, structured issue templates, and a monthly forks-watch job that opens GitHub Issues with new upstream activity.
-- 262 tests pass on Python 3.10 / 3.11 / 3.12 / 3.13 / 3.14 (Docker matrix +
+- Latest: **`v1.2.1`** (2026-05-20). PyPI: [`opentele-ng`](https://pypi.org/project/opentele-ng/) / Docker: [`ghcr.io/stufently/opentele-ng`](https://ghcr.io/stufently/opentele-ng) (now on Python 3.14). Production-ready. 1.2.1 adds `QFile.bytesAvailable()`, CLI integration tests on real fixture tdata, expanded coverage gate to the whole package (was just `.td`), and cleanup of stale upstream docs.
+- 270 tests pass on Python 3.10 / 3.11 / 3.12 / 3.13 / 3.14 (Docker matrix +
   GitHub Actions matrix × Ubuntu / macOS / Windows).
-- `opentele.td` package coverage: **94.83%** (CI gate 90%).
+- Coverage: **83.48% on the whole `opentele` package** (CI gate 80% on full package, was 90% on `opentele.td` only — that subset is still 94.83%).
 - See [CHANGELOG.md](CHANGELOG.md) for the full per-release breakdown.
 
 ## Security

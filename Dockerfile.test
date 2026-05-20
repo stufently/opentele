@@ -1,5 +1,7 @@
-ARG PY_VERSION=3.13
-FROM python:${PY_VERSION}-slim
+# Pinned digest for reproducible test builds.
+ARG PY_VERSION=3.14
+ARG PY_BASE=python:3.14-slim@sha256:a7185a8e40af01bf891414a4df16ef10fc6000cee460a404a13da9029fe41604
+FROM ${PY_BASE}
 
 # PyQt6 runtime deps for Linux
 RUN apt-get update && apt-get install -y --no-install-recommends \

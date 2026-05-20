@@ -711,6 +711,26 @@ class QFile:
             return sz
         return self._size
 
+    def bytesAvailable(self) -> int:
+        """Mirror the ``QIODevice.bytesAvailable()`` contract so callers that
+        treat ``QFile`` polymorphically with ``QBuffer`` (e.g. the
+        ``_GuardCount`` helper in ``account.py``, which uses
+        ``stream.bytesAvailable()`` for the DoS pre-loop cap) see consistent
+        numbers regardless of which IO device is underneath.
+
+        Note: ``QDataStream(QFile, mode)`` is **not** a supported constructor
+        — wrap the file's contents in a ``QByteArray`` first if you need to
+        feed a stream. ``storage.py`` already does this. This method exists
+        for direct ``QFile`` consumers and future-proofs ``_GuardCount`` if
+        the wire-format read path ever switches to streaming.
+        """
+        if self._fh is None:
+            return 0
+        try:
+            return max(0, self.size() - self._fh.tell())
+        except (ValueError, OSError):
+            return 0
+
 
 # ---------------------------------------------------------------------------
 # QDir — pathlib-backed directory wrapper

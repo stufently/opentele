@@ -12,8 +12,10 @@
 #       -v "/path/to/Telegram/tdata:/tdata:ro" \
 #       -v "$PWD/out:/out" \
 #       ghcr.io/stufently/opentele-ng:latest convert /tdata --output /out/me.session
-ARG PYTHON_VERSION=3.13
-FROM python:${PYTHON_VERSION}-slim AS builder
+# Pinned by digest for reproducible builds. Refresh manually via:
+#   docker pull python:3.14-slim && docker inspect python:3.14-slim --format='{{index .RepoDigests 0}}'
+ARG PYTHON_BASE=python:3.14-slim@sha256:a7185a8e40af01bf891414a4df16ef10fc6000cee460a404a13da9029fe41604
+FROM ${PYTHON_BASE} AS builder
 
 WORKDIR /build
 # MANIFEST.in `include`s these — copy them in so sdist build doesn't warn.
@@ -25,7 +27,7 @@ RUN pip install --no-cache-dir --upgrade pip build && \
     python -m build --wheel --outdir /wheels
 
 # --- final image ---------------------------------------------------------
-FROM python:${PYTHON_VERSION}-slim
+FROM ${PYTHON_BASE}
 
 LABEL org.opencontainers.image.title="opentele-ng" \
       org.opencontainers.image.description="Modern fork of opentele for Python 3.10-3.14 (no Qt runtime). Convert Telegram Desktop tdata to Telethon sessions." \
