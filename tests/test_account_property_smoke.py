@@ -14,7 +14,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from opentele.api import API
 from opentele.td import TDesktop
 from opentele.td import shared as td

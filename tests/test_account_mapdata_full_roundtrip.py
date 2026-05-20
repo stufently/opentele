@@ -7,8 +7,6 @@
 Phase 4 добавит полноценные fixture-based тесты с реальным tdata. Здесь Phase 1.5
 sanity на уровне stream-логики.
 """
-from PyQt6.QtCore import QByteArray, QDataStream, QIODevice
-
 from opentele.td.configs import (
     BareId,
     FileKey,
@@ -16,6 +14,7 @@ from opentele.td.configs import (
     UserId,
     lskType,
 )
+from PyQt6.QtCore import QByteArray, QDataStream, QIODevice
 
 
 def _make_write_stream() -> tuple[QByteArray, QDataStream]:

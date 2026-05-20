@@ -34,7 +34,6 @@ import tempfile
 from pathlib import Path
 
 import pytest
-
 from opentele.td import TDesktop
 
 _REAL_TDATA = os.environ.get("OPENTELE_REAL_TDATA_PATH")
