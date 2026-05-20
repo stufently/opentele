@@ -8,10 +8,10 @@
 > `import opentele` compatibility.
 
 [![PyPI version](https://img.shields.io/pypi/v/opentele-ng.svg)](https://pypi.org/project/opentele-ng/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-![Python 3.10–3.14](https://img.shields.io/badge/python-3.10%E2%80%933.14-blue)
-![Tests](https://img.shields.io/badge/tests-252%20passing-brightgreen)
-![Coverage](https://img.shields.io/badge/coverage-94.8%25-brightgreen)
+[![Python](https://img.shields.io/pypi/pyversions/opentele-ng.svg)](https://pypi.org/project/opentele-ng/)
+[![CI](https://github.com/stufently/opentele/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/stufently/opentele/actions/workflows/ci.yml)
+[![Lint](https://github.com/stufently/opentele/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/stufently/opentele/actions/workflows/lint.yml)
+[![License: MIT](https://img.shields.io/pypi/l/opentele-ng.svg)](LICENSE)
 ![No Qt](https://img.shields.io/badge/runtime-no%20Qt%20dependency-brightgreen)
 
 ## Why this fork
@@ -56,7 +56,19 @@ System libraries (`libgl1`, `libegl1`, `libxkbcommon-x11-0`, etc.) are **not**
 required — you can deploy on Alpine, distroless, serverless, or any minimal
 Linux container.
 
-## Quick start
+## CLI — one-shot workflows (v1.1.0+)
+
+```bash
+# Read-only inspection of a tdata folder
+opentele-ng info /path/to/Telegram/tdata
+
+# Convert tdata → Telethon .session file
+opentele-ng convert /path/to/Telegram/tdata --output ./me.session
+```
+
+See [`docs/examples/cli-quick-start.md`](docs/examples/cli-quick-start.md) for flags and exit codes.
+
+## Quick start (Python API)
 
 ```python
 import asyncio
@@ -102,8 +114,8 @@ asyncio.run(main())
 
 ## Status
 
-- Latest: **`v1.0.4-polish`** (2026-05-20). PyPI: [`opentele-ng 1.0.4`](https://pypi.org/project/opentele-ng/). Production-ready. 1.0.4 is a packaging + metadata polish release on top of 1.0.3 (no runtime changes).
-- 252 tests pass on Python 3.10 / 3.11 / 3.12 / 3.13 / 3.14 (Docker matrix +
+- Latest: **`v1.1.0`** (2026-05-20). PyPI: [`opentele-ng 1.1.0`](https://pypi.org/project/opentele-ng/). Production-ready. 1.1.0 adds the `opentele-ng` CLI, PEP 621 pyproject.toml, Trusted Publishing on tag push, `py.typed` marker, and a GitHub Pages docs site.
+- 262 tests pass on Python 3.10 / 3.11 / 3.12 / 3.13 / 3.14 (Docker matrix +
   GitHub Actions matrix × Ubuntu / macOS / Windows).
 - `opentele.td` package coverage: **94.83%** (CI gate 90%).
 - See [CHANGELOG.md](CHANGELOG.md) for the full per-release breakdown.

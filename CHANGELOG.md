@@ -3,6 +3,35 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-05-20 — CLI, pyproject.toml, Trusted Publishing, docs site
+
+First minor bump since 1.0.0. Major theme: bring the project up to modern Python packaging standards (PEP 621 pyproject, PEP 561 typing marker, Trusted Publishing) and ship a native CLI so the 80% conversion case no longer requires hand-rolled Python.
+
+### Added
+- **`opentele-ng` CLI** (entry point `opentele.__main__:main`):
+    - `opentele-ng info <tdata>` — read-only summary of accounts (UserId, DcId, AppVersion, sha256 of authKey). `--json` for machine-readable output.
+    - `opentele-ng convert <tdata> -o <session>` — convert tdata to a Telethon `.session` file. `--use-current-session` to reuse rather than create a new session; `--force` to overwrite.
+    - `opentele-ng --version`, `opentele-ng --help`.
+    - 8 new tests in `tests/test_cli.py` (argparse, exit codes, refuse-overwrite, info/convert path validation).
+- **PEP 561 typed marker** (`src/py.typed`) — IDEs and type-checkers (mypy, pyright) now pick up our type annotations. Classifier `Typing :: Typed` re-introduced.
+- **`opentele.__version__`** — read from `importlib.metadata`. Fallback `0.0.0+unknown` for editable installs without metadata.
+- **`CONTRIBUTING.md`** + **`CODE_OF_CONDUCT.md`** (Contributor Covenant 2.1).
+- **`BENCHMARKS.md`** + `scripts/benchmark.py` — pure-Python `QDataStream` measured against PyQt6 baseline. Pure-Python is 1.5–4× slower on micro-ops (which is negligible inside a real tdata load — disk + AES dominate).
+- **`docs/examples/cli-quick-start.md`** + **`docs/examples/batch-convert.md`** — two new examples covering the CLI and parallel batch conversion.
+- **`mkdocs.yml`** + **`docs/index.md`** — minimal Material-themed docs site (replaces upstream's stale Read the Docs config).
+- **`.github/workflows/publish.yml`** — automated PyPI publish via [Trusted Publishing (OIDC)](https://docs.pypi.org/trusted-publishers/) on `v*` tags. No long-lived API token in the repo.
+- **`.github/workflows/docs.yml`** — auto-build + deploy mkdocs to GitHub Pages on `main`.
+
+### Changed
+- **`setup.py` removed.** All metadata lives in `pyproject.toml` (PEP 621). Build backend is `setuptools.build_meta`, same as before.
+- **`requirements.txt`** still present for `pip install -r requirements.txt`-style dev workflows, but pyproject.toml is the single source of truth for runtime deps. Test deps moved into `[project.optional-dependencies] test = [...]` — install with `pip install -e '.[test]'`.
+- **README badges** switched from hardcoded counts to live PyPI / GitHub Actions badges (`pypi/v`, `pypi/pyversions`, `pypi/l`, CI/Lint workflow badges).
+
+### Verified
+- 262 tests pass (was 252) on Python 3.10–3.14. Coverage 94.83% on `opentele.td` (gate 90%).
+- `pip install opentele-ng==1.1.0` in fresh `python:3.13-slim`: imports clean, `opentele.__version__ == "1.1.0"`, `py.typed` shipped in the wheel, `opentele-ng --version` works as a shell command.
+- Cross-impl byte-identity check still green on 2 real tdata folders (TD 6.0.6 + TD 6.0.8).
+
 ## [1.0.4] - 2026-05-20 — Packaging + metadata polish (post-publish follow-up)
 
 Zero-risk doc-level release that cleans up packaging glitches discovered after 1.0.3 went live on PyPI, plus PyPI page metadata polish (more project URLs, `Production/Stable` dev-status, additional Python implementation classifiers). No runtime behaviour change — wire-format / crypto / API surface identical to 1.0.3.

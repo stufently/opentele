@@ -12,17 +12,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY requirements.txt requirements-test.txt setup.py README.md MANIFEST.in ./
+COPY pyproject.toml requirements.txt requirements-test.txt README.md MANIFEST.in LICENSE ./
 COPY src/ ./src/
 COPY tests/ ./tests/
 COPY docs/ ./docs/
 
 RUN pip install --no-cache-dir --upgrade pip
-RUN pip install --no-cache-dir -e .
-RUN pip install --no-cache-dir -r requirements-test.txt
-
-# Copy ruff config
-COPY .ruff.toml ./
+RUN pip install --no-cache-dir -e ".[test]"
 
 # tdata_test.py — live integration test, requires real Telegram auth, excluded from CI
 CMD ["pytest", "-v", "--tb=short", "--ignore=tests/tdata_test.py", "tests/"]

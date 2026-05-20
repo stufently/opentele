@@ -1,0 +1,99 @@
+[build-system]
+# SPDX license + license-files require setuptools>=77 (PEP 639).
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opentele-ng"
+version = "1.1.0"
+description = "Modern fork of opentele for Python 3.10–3.14 — no Qt runtime dependency (pure-Python QDataStream replacement). Convert Telegram Desktop tdata to Telethon sessions; supports current TDesktop 5.x–6.x tdata format."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [
+    { name = "stufently (fork of thedemons)", email = "vitya5503@gmail.com" },
+]
+keywords = [
+    "tdata",
+    "tdesktop",
+    "telegram",
+    "telegram-desktop",
+    "telethon",
+    "opentele",
+    "opentele-ng",
+    "python-3.13",
+    "python-3.14",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Communications :: Chat",
+    "Typing :: Typed",
+]
+dependencies = [
+    "telethon>=1.36,<2",
+    "tgcrypto-pyrofork>=1.2.7",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7",
+    "pytest-cov>=4",
+    "pytest-asyncio>=0.21",
+    "hypothesis>=6",
+    "ruff>=0.5",
+    # PyQt6 stays test-only — used as the byte-identity oracle in
+    # tests/qdatastream/* against the pure-Python QDataStream replacement.
+    "PyQt6>=6.6",
+]
+
+[project.urls]
+Homepage = "https://github.com/stufently/opentele"
+Source = "https://github.com/stufently/opentele"
+Changelog = "https://github.com/stufently/opentele/blob/main/CHANGELOG.md"
+"Bug Tracker" = "https://github.com/stufently/opentele/issues"
+Documentation = "https://github.com/stufently/opentele#readme"
+Security = "https://github.com/stufently/opentele/blob/main/SECURITY.md"
+
+[project.scripts]
+opentele-ng = "opentele.__main__:main"
+
+[tool.setuptools]
+include-package-data = true
+packages = ["opentele", "opentele.td", "opentele.tl"]
+
+[tool.setuptools.package-dir]
+opentele = "src"
+
+[tool.setuptools.package-data]
+opentele = ["py.typed"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B"]
+ignore = [
+    "E501",  # line too long (we have many long binary-format constants)
+    "B008",  # function calls in defaults (intentional in Account.__init__)
+    "B904",  # raise-without-from (deferred — too many sites)
+    "UP006", # typing.Dict → dict[...] (we still support 3.9-ish style intentionally)
+    "UP007", # Optional[X] → X | None (same)
+    "UP035", # typing import deprecations
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
