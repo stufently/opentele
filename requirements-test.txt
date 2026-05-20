@@ -1,7 +1,6 @@
 pytest>=7
 pytest-cov>=4
 pytest-asyncio>=0.21
-pytest-timeout>=2.1
 hypothesis>=6
 ruff>=0.5
 # PyQt6 is kept only as a TEST-time dependency: tests/qdatastream/* use it as

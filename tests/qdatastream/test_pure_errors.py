@@ -490,7 +490,6 @@ def test_QDir_exists_on_missing_path_returns_False(tmp_path: Path) -> None:
 
 def test_QDir_mkpath_creates_nested_dirs(tmp_path: Path) -> None:
     nested = tmp_path / "a" / "b" / "c"
-    assert QDir.cleanPath(str(nested)) == str(nested.resolve()).rstrip("/") or True
     d = QDir(str(tmp_path))
     assert d.mkpath(str(nested)) is True
     assert nested.exists()
