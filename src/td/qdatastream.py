@@ -402,6 +402,19 @@ class QDataStream:
             return True
         return self._device.atEnd()
 
+    def bytesAvailable(self) -> int:
+        """Phase 1.0.3: bytes still readable from the underlying device.
+
+        Used by callers (e.g. ``MapData.read``) to cap attacker-controlled
+        ``count`` fields before entering a fixed-size-per-iteration loop.
+        Returns 0 if the stream has no device or the device is exhausted.
+        """
+        if self._device is None:
+            return 0
+        if hasattr(self._device, "bytesAvailable"):
+            return int(self._device.bytesAvailable())
+        return 0
+
     # ---- internal helpers -----------------------------------------------
 
     def _read_bytes(self, n: int) -> Optional[bytes]:

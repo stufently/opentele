@@ -13,6 +13,36 @@ from .configs import *
 #     from ..opentele import *
 
 
+def _GuardCount(count: int, pair_bytes: int, stream, key_name: str) -> None:
+    """Phase 1.0.3 DoS guard: refuse unbounded count loops on untrusted input.
+
+    Before entering a ``for i in range(count)`` over fixed-size-per-iteration
+    payload, verify ``count * pair_bytes`` fits in ``stream.bytesAvailable()``.
+    Without this guard, a malformed tdata blob with ``count = 0xFFFFFFFF``
+    (~4 G iterations) would spin for minutes consuming CPU before the trailing
+    ``ExpectStreamStatus`` finally trips.
+
+    Raise ``TDataReadMapDataFailed`` early so the read path fails fast and the
+    swallowing ``except OpenTeleException`` in ``TDesktop.__loadFromTData`` can
+    do its job.
+    """
+    if count <= 0:
+        return
+    try:
+        available = stream.bytesAvailable()
+    except AttributeError:
+        # Older stream wrapper without bytesAvailable() — skip guard, fall back
+        # to the trailing ExpectStreamStatus. Not a regression vs Phase 5.
+        return
+    max_pairs = available // pair_bytes
+    if count > max_pairs:
+        raise TDataReadMapDataFailed(
+            f"Corrupt map data: {key_name} declares count={count} but only "
+            f"{available} bytes available (max {max_pairs} pairs of "
+            f"{pair_bytes} bytes). Refusing unbounded loop (DoS guard)."
+        )
+
+
 class MapData(BaseObject):  # nocov
     def __init__(self, basePath: str) -> None:
 
@@ -153,6 +183,8 @@ class MapData(BaseObject):  # nocov
 
             if keyType == lskType.lskDraft:
                 count = map.stream.readUInt32()
+                # Phase 1.0.3 DoS guard: 16 bytes per pair (FileKey uint64 + PeerId uint64)
+                _GuardCount(count, sizeof(uint64) * 2, map.stream, "lskDraft")
                 for i in range(count):
                     key = FileKey(map.stream.readUInt64())
                     peerIdSerialized = map.stream.readUInt64()
@@ -165,6 +197,8 @@ class MapData(BaseObject):  # nocov
 
             elif keyType == lskType.lskDraftPosition:
                 count = map.stream.readUInt32()
+                # Phase 1.0.3 DoS guard: 16 bytes per pair
+                _GuardCount(count, sizeof(uint64) * 2, map.stream, "lskDraftPosition")
                 for i in range(count):
                     key = FileKey(map.stream.readUInt64())
                     peerIdSerialized = map.stream.readUInt64()
@@ -177,6 +211,13 @@ class MapData(BaseObject):  # nocov
                 or (keyType == lskType.lskLegacyAudios)
             ):
                 count = map.stream.readUInt32()
+                # Phase 1.0.3 DoS guard: 28 bytes per item (3 × uint64 + int32)
+                _GuardCount(
+                    count,
+                    sizeof(uint64) * 3 + sizeof(int32),
+                    map.stream,
+                    "lskLegacyImages/StickerImages/Audios",
+                )
                 for i in range(count):
                     filekey = map.stream.readUInt64()
                     first = map.stream.readUInt64()
@@ -272,6 +313,8 @@ class MapData(BaseObject):  # nocov
                 # map: uint32 count + count × (FileKey uint64, PeerId uint64)
                 # Источник: TDesktop storage_account.cpp dev, case lskBotStorages.
                 count = map.stream.readUInt32()
+                # Phase 1.0.3 DoS guard: 16 bytes per pair
+                _GuardCount(count, sizeof(uint64) * 2, map.stream, "lskBotStorages")
                 for _ in range(count):
                     bs_key = FileKey(map.stream.readUInt64())
                     bs_peerIdSerialized = map.stream.readUInt64()
@@ -964,6 +1007,22 @@ class Account(BaseObject):
                 stream.status() == QDataStream.Status.Ok,
                 QDataStreamFailed("Could not read keys count from mtp authorization."),
             )
+
+            # Phase 1.0.3 DoS guard: each AuthKey is int32 dcId + 256-byte key = 260 bytes.
+            # Refuse to allocate unbounded loop on attacker-controlled key_count.
+            pair_bytes = sizeof(int32) + td.AuthKey.kSize
+            try:
+                available = stream.bytesAvailable()
+            except AttributeError:
+                available = None
+            if available is not None and key_count > 0:
+                max_pairs = available // pair_bytes
+                if key_count > max_pairs:
+                    raise QDataStreamFailed(
+                        f"Corrupt mtp authorization: key_count={key_count} but only "
+                        f"{available} bytes available (max {max_pairs} keys). "
+                        f"Refusing unbounded loop (DoS guard)."
+                    )
 
             for i in range(key_count):
                 dcId = DcId(stream.readInt32())

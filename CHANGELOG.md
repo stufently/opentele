@@ -1,6 +1,31 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.0.3] - 2026-05-20 — DoS fix in MapData count loops (security)
+
+Closes the **DoS vulnerability** documented in 1.0.2's `tests/test_dos_protection.py` xfail canaries. Phase 1.0.2 found that several count-driven loops in `MapData.read()` and `Account._setMtpAuthorization.readKeys()` had no upper-bound check on attacker-controlled `count` fields — a malformed tdata blob with `count = 0xFFFFFFFF` (~4 billion iterations) would spin for minutes consuming CPU before the trailing `ExpectStreamStatus` finally tripped.
+
+### Fixed (security)
+- **`MapData.read()`**: pre-loop `count` cap by `stream.bytesAvailable() // pair_size` in:
+  - `lskDraft` branch (16 bytes/pair: FileKey + PeerId)
+  - `lskDraftPosition` branch (16 bytes/pair)
+  - `lskLegacyImages` / `lskLegacyStickerImages` / `lskLegacyAudios` branch (28 bytes/pair: 3 × uint64 + int32)
+  - `lskBotStorages` branch (16 bytes/pair)
+- **`Account._setMtpAuthorization.readKeys()`**: pre-loop cap on `key_count`. Each AuthKey is `int32 dcId + 256-byte key = 260 bytes`. Refuses to allocate unbounded loop if declared count exceeds remaining buffer.
+- All guards raise `TDataReadMapDataFailed` / `QDataStreamFailed` early so `TDesktop.__loadFromTData`'s existing `except OpenTeleException` swallow path handles it cleanly (corrupt tdata → "No account has been loaded" instead of multi-minute CPU spin).
+
+### Added
+- **`QDataStream.bytesAvailable()`** (`src/td/qdatastream.py`) — delegates to `device.bytesAvailable()`. Returns 0 if no device or device exhausted. Used by the new `_GuardCount` helper.
+- **`_GuardCount(count, pair_bytes, stream, key_name)`** helper at module top of `src/td/account.py`. Compact, reusable, descriptive error message includes declared count + available bytes + max pairs.
+
+### Test impact
+- 5 xfail security canaries in `tests/test_dos_protection.py` automatically flip to `PASSED` (they were already designed to do so: `time.perf_counter() < 0.5s + raise observed → assert raised`). No test code modification needed.
+- 247 tests pass on Python 3.10–3.14 (6 DoS canaries now all PASS instead of 5 xfail + 1 pass).
+- Coverage stable at **94.89%** on `opentele.td` (gate 90%).
+
+### Compatibility
+- Legitimate large `count` values (e.g. a real Telegram Desktop user with hundreds of drafts) still load: the cap is by `bytesAvailable` not a hardcoded limit, so any valid tdata where `count * pair_size ≤ remaining bytes` passes through unchanged. Only **malformed** blobs are rejected.
+
 ## [1.0.2] - 2026-05-20 — Test hardening (3-AI consultation)
 
 Phase 1.0.2 follows up on the Codex/Cursor/Gemini consultation after 1.0.1 shipped. Focus is purely on test coverage and dead-code removal — no behaviour changes to the production read/write paths.
