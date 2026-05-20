@@ -7,6 +7,7 @@
 > reads current Telegram Desktop 5.x – 6.x tdata format • drop-in
 > `import opentele` compatibility.
 
+[![PyPI version](https://img.shields.io/pypi/v/opentele-ng.svg)](https://pypi.org/project/opentele-ng/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 ![Python 3.10–3.14](https://img.shields.io/badge/python-3.10%E2%80%933.14-blue)
 ![Tests](https://img.shields.io/badge/tests-252%20passing-brightgreen)
@@ -101,7 +102,7 @@ asyncio.run(main())
 
 ## Status
 
-- Latest: **`v1.0.3-dos-fix`** (2026-05-20). Production-ready security release.
+- Latest: **`v1.0.4-polish`** (2026-05-20). PyPI: [`opentele-ng 1.0.4`](https://pypi.org/project/opentele-ng/). Production-ready. 1.0.4 is a packaging + metadata polish release on top of 1.0.3 (no runtime changes).
 - 252 tests pass on Python 3.10 / 3.11 / 3.12 / 3.13 / 3.14 (Docker matrix +
   GitHub Actions matrix × Ubuntu / macOS / Windows).
 - `opentele.td` package coverage: **94.83%** (CI gate 90%).

@@ -3,15 +3,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-05-20 — Packaging + metadata polish (post-publish follow-up)
+
+Zero-risk doc-level release that cleans up packaging glitches discovered after 1.0.3 went live on PyPI, plus PyPI page metadata polish (more project URLs, `Production/Stable` dev-status, additional Python implementation classifiers). No runtime behaviour change — wire-format / crypto / API surface identical to 1.0.3.
+
 ### Fixed (packaging)
-- `MANIFEST.in`: added missing `include` keyword on `requirements.txt` — wheel builds from sdist were failing with `FileNotFoundError: 'requirements.txt'`. Also added explicit `include` for README.md, LICENSE, CHANGELOG.md, ACKNOWLEDGMENTS.md, SECURITY.md and `recursive-include docs/examples`.
+- `MANIFEST.in`: added missing `include` keyword on `requirements.txt` — wheel builds from sdist were failing with `FileNotFoundError: 'requirements.txt'`. Also added explicit `include` for README.md, LICENSE, CHANGELOG.md, ACKNOWLEDGMENTS.md, SECURITY.md, `recursive-include docs/examples *.md`, and `prune tests` (sdist no longer carries half the test tree).
 
 ### Changed
-- `scripts/publish.sh` switched from host `pip install build twine` to a Docker container (`python:3.13-slim` with `--user $UID:$GID`). Resolves PEP 668 "externally-managed-environment" on modern host distros and keeps `dist/` artifacts owned by the invoking user.
+- `setup.py` classifiers: `Development Status :: 4 - Beta` → `5 - Production/Stable`; added `Programming Language :: Python :: 3 :: Only` and `Programming Language :: Python :: Implementation :: CPython`.
+- `setup.py` `project_urls`: now exposes Homepage, Source, Changelog, Bug Tracker, Documentation, Security (was: only `url=` Homepage). All link to the GitHub repo, so the PyPI sidebar renders proper navigation.
+- `scripts/publish.sh` switched from host `pip install build twine` to a Docker container (`python:3.13-slim` with `--user $UID:$GID`). Resolves PEP 668 "externally-managed-environment" on modern host distros and keeps `dist/` artifacts owned by the invoking user. Token is passed via host env var (not argv) so it does not appear in `ps`; `.env` is sourced without `set -a` so secrets don't leak into `/proc/<pid>/environ`.
 
 ### Verified
-- `opentele-ng 1.0.3` published to PyPI: <https://pypi.org/project/opentele-ng/1.0.3/>.
-- Cross-impl byte-identity check on 2 real tdata folders (TD 6.0.6 + TD 6.0.8) — `opentele-ng` matches `opentele-tg` (PyQt5) and `opentele2` (pure-Python DedInc fork) **byte-for-byte** on `serializeMtpAuthorization()`, `authKey`, `localKey`, `UserId`, `MainDcId`. On TD 6.0.6 tdata, `opentele-tg` crashes (`No account has been loaded`) because it lacks Phase 1.5 lskTypes 0x1A-0x1E — confirms our wire-format fixes are load-bearing for current Telegram Desktop tdata in the wild.
+- Cross-impl byte-identity check on 2 real tdata folders (TD 6.0.6 + TD 6.0.8) — `opentele-ng` matches `opentele-tg 3.13.1` (PyQt5, Ehekatech fork) and `opentele2 1.1.6` (pure-Python DedInc fork) **byte-for-byte** on `serializeMtpAuthorization()`, `authKey`, `localKey`, `UserId`, `MainDcId`. On TD 6.0.6 tdata, `opentele-tg` crashes (`No account has been loaded`) because it lacks Phase 1.5 lskTypes 0x1A-0x1E — confirms our wire-format fixes are load-bearing for current Telegram Desktop tdata in the wild.
 
 ## [1.0.3] - 2026-05-20 — DoS fix in MapData count loops (security)
 

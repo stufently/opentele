@@ -5,7 +5,7 @@ README = (pathlib.Path(__file__).parent / "README.md").read_text(encoding="utf-8
 
 PACKAGE_NAME = "opentele"
 DIST_NAME = "opentele-ng"
-VERSION = "1.0.3"
+VERSION = "1.0.4"
 SOURCE_DIRECTORY = "src"
 
 with open("requirements.txt", encoding="utf-8") as data:
@@ -27,11 +27,19 @@ setup(
     ),
     long_description=README,
     long_description_content_type="text/markdown",
-    url="https://github.com/stufently/opentele",
+    project_urls={
+        "Homepage": "https://github.com/stufently/opentele",
+        "Source": "https://github.com/stufently/opentele",
+        "Changelog": "https://github.com/stufently/opentele/blob/main/CHANGELOG.md",
+        "Bug Tracker": "https://github.com/stufently/opentele/issues",
+        "Documentation": "https://github.com/stufently/opentele#readme",
+        "Security": "https://github.com/stufently/opentele/blob/main/SECURITY.md",
+    },
     author="stufently (fork of thedemons)",
     author_email="vitya5503@gmail.com",
     python_requires=">=3.10",
     classifiers=[
+        "Development Status :: 5 - Production/Stable",
         "License :: OSI Approved :: MIT License",
         "Operating System :: Microsoft :: Windows",
         "Operating System :: MacOS",
@@ -42,7 +50,8 @@ setup(
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
         "Programming Language :: Python :: 3.14",
-        "Development Status :: 4 - Beta",
+        "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Communications :: Chat",
     ],
     keywords=[
