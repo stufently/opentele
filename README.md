@@ -125,13 +125,14 @@ asyncio.run(main())
 |---------|---------|--------|
 | `OPENTELE_EXTEND_STRICT` | `1` | `@extend_class` raises `TypeError` on attribute conflicts. Set to `0` to fall back to `RuntimeWarning` (legacy upstream behaviour). |
 | `OPENTELE_REAL_TDATA_PATH` | unset | When set to an absolute path of a production tdata folder, enables the opt-in real-data smoke test in `tests/integration/test_real_tdata_smoke.py`. CI never sets it. |
+| `OPENTELE_LENIENT_UNKNOWN_LSK` | unset (= strict) | Since 1.3.0. By default an unknown `lskType` in encrypted MapData raises `TDataReadMapDataFailed` (the unknown key's payload size is unknown, so reading on would desync the stream). Set to `1` to log a warning and stop parsing instead — you'll get a partial but consistent map. |
 
 ## Status
 
-- Latest: **`v1.2.2`** (2026-05-20). PyPI: [`opentele-ng`](https://pypi.org/project/opentele-ng/) / Docker: [`ghcr.io/stufently/opentele-ng`](https://ghcr.io/stufently/opentele-ng) (Python 3.14). Production-ready. 1.2.2 fixes a long-standing upstream data bug (missing comma in `devices.py` was concatenating two Huawei device names into a bogus single entry), moves the 174 KB of device fingerprint tables out of `devices.py` into `devices.json` (-90% file size, lazy-loaded), closes 5 CodeQL findings, and creates the missing GH labels referenced by issue templates.
-- 270 tests pass on Python 3.10 / 3.11 / 3.12 / 3.13 / 3.14 (Docker matrix +
+- Latest: **`v1.3.0`** (2026-05-20). PyPI: [`opentele-ng`](https://pypi.org/project/opentele-ng/) / Docker: [`ghcr.io/stufently/opentele-ng`](https://ghcr.io/stufently/opentele-ng) (Python 3.14). Production-ready. 1.3.0 closes 5 architectural known-issues from 1.2.2: **`kPerformanceMode` default flipped to `False`** so new tdata is actually encrypted (was using a hard-coded `localKey`), UTF-8 passcodes now work (was ASCII-only → crash), unknown `lskType` keys fail closed (was desyncing the stream), `StorageAccount` always reads/writes MTP config (was data-loss class in perf mode), and the Docker image now installs from a hash-locked deps file for reproducible builds.
+- 295 tests pass on Python 3.10 / 3.11 / 3.12 / 3.13 / 3.14 (Docker matrix +
   GitHub Actions matrix × Ubuntu / macOS / Windows).
-- Coverage: **83.48% on the whole `opentele` package** (CI gate 80% on full package, was 90% on `opentele.td` only — that subset is still 94.83%).
+- Coverage: **~84% on the whole `opentele` package** (CI gate 80% on full package, was 90% on `opentele.td` only — that subset is still 94.83%).
 - See [CHANGELOG.md](CHANGELOG.md) for the full per-release breakdown.
 
 ## Security

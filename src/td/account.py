@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 
 from telethon.network.connection.connection import Connection
 from telethon.network.connection.tcpfull import ConnectionTcpFull
@@ -327,7 +328,25 @@ class MapData(BaseObject):  # nocov
                 prefsKey = map.stream.readUInt64()
 
             else:
-                logging.warning(f"Unknown key type in encrypted map: {keyType}")
+                # 1.3.0: an unknown lskType has an unknown payload size, so we
+                # cannot safely keep reading — the next readUInt32() would pick
+                # up payload bytes as a "next keyType" and desync the stream.
+                # Default: fail-closed with a clear exception. Set the env var
+                # OPENTELE_LENIENT_UNKNOWN_LSK=1 to log-and-stop instead (you
+                # still lose any data after this key, but the partial map is
+                # returned).
+                msg = (
+                    f"Unknown lskType key {int(keyType):#x} at offset "
+                    f"{map.stream.bytesAvailable()} bytes remaining. Likely a "
+                    "newer Telegram Desktop introduced an lskType we don't "
+                    "know. File an issue at "
+                    "https://github.com/stufently/opentele/issues with the "
+                    "TDesktop version that produced this tdata."
+                )
+                if os.environ.get("OPENTELE_LENIENT_UNKNOWN_LSK") == "1":
+                    logging.warning(msg)
+                    break  # stop parsing — payload size unknown
+                raise TDataReadMapDataFailed(msg)
 
             ExpectStreamStatus(map.stream, "Could not stream data from mapData ")
 
@@ -623,14 +642,17 @@ class StorageAccount(BaseObject):  # nocov
         return self.__mapData
 
     def start(self, localKey: td.AuthKey) -> td.MTP.Config:
-        # Intended for internal usage only
-
+        # Intended for internal usage only.
+        #
+        # 1.3.0: previously this method skipped readMtpConfig() under
+        # ``kPerformanceMode`` and returned ``self.__config`` (a fresh,
+        # default-initialized MTP.Config). That dropped any MTP config that
+        # had been written by a previous save — a data-loss bug. Performance
+        # toggle should not change data semantics; it should only skip the
+        # expensive *localKey* derivation. Always read the config now.
         self.__localKey = localKey
         self.readMapWith(localKey)
-
-        return (
-            self.__config if self.owner.owner.kPerformanceMode else self.readMtpConfig()
-        )
+        return self.readMtpConfig()
 
     def readMtpData(self):
         # Intended for internal usage only
@@ -756,9 +778,12 @@ class StorageAccount(BaseObject):  # nocov
         )
         self.writeMap(basePath)
 
-        if not self.owner.owner.kPerformanceMode:
-            self.writeMtpConfig(basePath)
-
+        # 1.3.0: writeMtpConfig is unconditional now (was skipped under
+        # ``kPerformanceMode``). Skipping the config write meant the next
+        # SaveTData round-trip lost any updated MTP config — a data-loss
+        # bug. Performance mode should only skip *localKey* derivation, not
+        # change which fields actually persist.
+        self.writeMtpConfig(basePath)
         self.writeMtpData(baseGlobalPath, dataNameKey)
 
 

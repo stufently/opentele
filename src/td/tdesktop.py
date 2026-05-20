@@ -127,7 +127,7 @@ class TDesktop(BaseObject):
         self.__basePath = basePath
         self.__keyFile = keyFile if (keyFile != None) else TDesktop.kDefaultKeyFile
         self.__passcode = passcode if (passcode != None) else str("")
-        self.__passcodeBytes = self.__passcode.encode("ascii")
+        self.__passcodeBytes = self.__passcode.encode("utf-8")
         self.__mainAccount: Optional[td.Account] = None
         self.__active_index = -1
         self.__passcodeKey = None
@@ -197,7 +197,7 @@ class TDesktop(BaseObject):
 
         if passcode != None and self.__passcode != passcode:
             self.__passcode = passcode
-            self.__passcodeBytes = passcode.encode("ascii")
+            self.__passcodeBytes = passcode.encode("utf-8")
 
         try:
             self.__loadFromTData()
@@ -262,7 +262,7 @@ class TDesktop(BaseObject):
 
         if passcode != None and self.__passcode != passcode:
             self.__passcode = passcode
-            self.__passcodeBytes = passcode.encode("ascii")
+            self.__passcodeBytes = passcode.encode("utf-8")
             self.__isLoaded = False  # to generate new localKey
 
         if not self.isLoaded():
@@ -652,13 +652,27 @@ class TDesktop(BaseObject):
     def PerformanceMode(cls, enabled: bool = True):
         """
         Enable or disable performance mode. See `kPerformanceMode`.
-        It is enabled by default.
+
+        **Since 1.3.0 performance mode is OFF by default** because it produces
+        tdata encrypted with a hard-coded ``localKey`` — i.e. effectively
+        unencrypted (anyone with the bytes can decrypt). Real localKey
+        derivation is now used unless the caller explicitly opts in.
+
+        Enabling performance mode emits a ``UserWarning`` once per process.
 
         ### Arguments:
             enabled (`bool`, default=`True`):
                 Either enable or disable performance mode.
-
         """
+        if enabled and not cls.kPerformanceMode:
+            import warnings
+            warnings.warn(
+                "TDesktop.PerformanceMode(True): the resulting tdata uses a "
+                "hard-coded localKey (≈ no encryption). Only safe for "
+                "throwaway / test data. See SECURITY.md.",
+                UserWarning,
+                stacklevel=2,
+            )
         cls.kPerformanceMode = enabled
 
     kMaxAccounts: int = int(6)
@@ -673,13 +687,19 @@ class TDesktop(BaseObject):
     kDefaultKeyFile: str = "data"
     """See `TDesktop.keyFile`"""
 
-    kPerformanceMode: bool = True
+    kPerformanceMode: bool = False
     """
-    When enabled, `SaveTData()` will be 5000x faster.
-    - What it does is using a constant `localKey` rather than generating it everytime when saving tdata.
-    - The average time for generating `localKey` is about `250` to `350` ms, depend on your CPU.
-    - When in performance mode, the average time to generate `localKey` is `0.0628` ms. Which is 5000x faster
-    - Of course this comes with a catch, your `tdata files` will always use a same constant `localKey`. Basicly no protection at all, but who cares?
+    When enabled, `SaveTData()` skips real ``localKey`` derivation and uses
+    a hard-coded key instead. ~5000× faster, but the resulting tdata is
+    effectively unencrypted — anyone with the bytes can read it.
+
+    **Default since 1.3.0: ``False``** (was ``True`` in 1.2.x and earlier
+    upstream releases). Set explicitly via ``TDesktop.PerformanceMode(True)``
+    if you understand the trade-off; that call now emits ``UserWarning``.
+
+    - The average time for generating real `localKey` is about `250` to `350` ms, depend on your CPU.
+    - When in performance mode, the average time to generate `localKey` is `0.0628` ms.
+    - In performance mode the produced tdata uses a constant `localKey`. Treat it as **unencrypted**.
     
     ### Notes:
         Note: Performance mode will be disabled if `passcode` is set.

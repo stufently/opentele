@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "opentele-ng"
-version = "1.2.2"
+version = "1.3.0"
 description = "Modern fork of opentele for Python 3.10–3.14 — no Qt runtime dependency (pure-Python QDataStream replacement). Convert Telegram Desktop tdata to Telethon sessions; supports current TDesktop 5.x–6.x tdata format."
 readme = "README.md"
 license = "MIT"

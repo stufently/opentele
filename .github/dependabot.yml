@@ -41,3 +41,9 @@ updates:
       - docker
     commit-message:
       prefix: "docker"
+
+  # The first `pip` block above already covers pyproject.toml. Dependabot
+  # automatically picks up `requirements*.txt` files in the same directory,
+  # so `requirements-docker.txt` (the hash-locked Docker runtime deps) is
+  # tracked under the same block. There is intentionally no second pip
+  # config block — GitHub docs disallow overlapping directories.

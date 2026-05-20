@@ -19,7 +19,7 @@ FROM ${PYTHON_BASE} AS builder
 
 WORKDIR /build
 # MANIFEST.in `include`s these — copy them in so sdist build doesn't warn.
-COPY pyproject.toml MANIFEST.in requirements.txt README.md LICENSE CHANGELOG.md ACKNOWLEDGMENTS.md SECURITY.md ./
+COPY pyproject.toml MANIFEST.in requirements.txt requirements-docker.txt README.md LICENSE CHANGELOG.md ACKNOWLEDGMENTS.md SECURITY.md ./
 COPY src/ ./src/
 COPY docs/examples/ ./docs/examples/
 
@@ -43,9 +43,16 @@ RUN groupadd -g ${APP_GID} app && \
     useradd -u ${APP_UID} -g ${APP_GID} -d /home/app -m -s /sbin/nologin app
 
 COPY --from=builder /wheels/*.whl /tmp/
+COPY --from=builder /build/requirements-docker.txt /tmp/
 
-RUN pip install --no-cache-dir /tmp/opentele_ng-*.whl && \
-    rm -rf /tmp/opentele_ng-*.whl
+# 1.3.0: install runtime deps from a hash-locked file (reproducible image),
+# then install the wheel without resolving its deps. Refresh the lock via:
+#     docker run --rm -v "$PWD:/work" -w /work python:3.14-slim bash -c \\
+#         'pip install -q pip-tools && pip-compile --generate-hashes \\
+#         --output-file requirements-docker.txt pyproject.toml'
+RUN pip install --no-cache-dir --require-hashes -r /tmp/requirements-docker.txt && \
+    pip install --no-cache-dir --no-deps /tmp/opentele_ng-*.whl && \
+    rm -f /tmp/opentele_ng-*.whl /tmp/requirements-docker.txt
 
 USER app
 WORKDIR /home/app

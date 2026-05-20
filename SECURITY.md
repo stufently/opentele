@@ -49,6 +49,19 @@ What to include:
 
 ## Known hardenings already in place
 
+- **Secure-by-default tdata write** (1.3.0): `TDesktop.kPerformanceMode`
+  defaulted to `True` in 1.2.x and earlier (upstream behaviour). In that
+  mode `SaveTData` skipped real `localKey` derivation and embedded a
+  hard-coded key from `tdesktop.py`. The resulting `tdata` was readable
+  by anyone with the bytes — effectively unencrypted. Since 1.3.0 the
+  default is `False`; opt-in via `TDesktop.PerformanceMode(True)` emits a
+  `UserWarning` that reminds the caller it's only safe for throwaway data.
+- **Strict-by-default unknown `lskType`** (1.3.0): `MapData.read` now
+  raises `TDataReadMapDataFailed` on unrecognised keys instead of
+  silently continuing past their payload (which would desync the read
+  cursor and could silently drop data on subsequent keys). Set
+  `OPENTELE_LENIENT_UNKNOWN_LSK=1` to log-and-break if you need to load
+  partial maps written by a future Telegram Desktop.
 - **DoS guards** (1.0.3) on every attacker-controlled `count` loop in
   `MapData.read` (lskDraft / lskDraftPosition / lskLegacyImages /
   lskBotStorages), `Account._setMtpAuthorization.readKeys`, and

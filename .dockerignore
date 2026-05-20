@@ -1,4 +1,5 @@
 # Build context exclusions — keep `docker build .` small + reproducible.
+# Note: requirements-docker.lock is intentionally NOT excluded — Dockerfile needs it.
 .git
 .github
 .venv
