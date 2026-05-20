@@ -5,7 +5,7 @@ README = (pathlib.Path(__file__).parent / "README.md").read_text(encoding="utf-8
 
 PACKAGE_NAME = "opentele"
 DIST_NAME = "opentele-ng"
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 SOURCE_DIRECTORY = "src"
 
 with open("requirements.txt", encoding="utf-8") as data:

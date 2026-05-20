@@ -1001,8 +1001,10 @@ class Account(BaseObject):
         # Intended for internal usage only
         Expects(self.isLoaded(), "Account data not loaded yet")
 
-        def keysSize(list: typing.List[td.AuthKey]):
-            return 4 + len(list) * (4 + td.AuthKey.kSize)
+        # Phase 1.0.2: removed unused nested helper ``keysSize(list)`` here
+        # (Codex/Cursor consultation — never called from anywhere in the
+        # codebase). QByteArray grows on demand so size pre-calculation is
+        # unnecessary on the write side.
 
         def writeKeys(stream: QDataStream, keys: typing.List[td.AuthKey]):
 

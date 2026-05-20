@@ -56,6 +56,10 @@ ignore = [
 
 [lint.per-file-ignores]
 "tests/*" = ["F401", "F811", "F541"]   # tests can have unused imports / placeholders
+# Phase 1.0.2: DoS tests intentionally use blind exception assertions —
+# the test is about timeout/no-hang, the specific exception type is
+# whatever OpenTeleException subclass MapData.read happens to raise.
+"tests/test_dos_protection.py" = ["F401", "F811", "F541", "B017"]
 "__init__.py" = ["F401", "F403"]
 
 [format]

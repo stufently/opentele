@@ -1,6 +1,46 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.0.2] - 2026-05-20 — Test hardening (3-AI consultation)
+
+Phase 1.0.2 follows up on the Codex/Cursor/Gemini consultation after 1.0.1 shipped. Focus is purely on test coverage and dead-code removal — no behaviour changes to the production read/write paths.
+
+### Added
+- **`tests/qdatastream/test_pure_errors.py`** (38 tests) — error-path coverage for `opentele.td.qdatastream`. The existing `tests/qdatastream/test_primitives.py` etc. used PyQt6 as the oracle and never touched our pure-Python error paths. This file directly exercises:
+  - EOF on every fixed-width `readUInt*`/`readInt*` (parametrized 8 ways)
+  - Status stickiness across reads + `resetStatus()` semantics
+  - `QDataStream()` without device → ReadPastEnd / WriteFailed
+  - `readRawData(n > available)` → short read + ReadPastEnd
+  - `readQString` malformed (truncated prefix, oversized payload, odd UTF-16 byte count, isolated surrogate, null/empty markers)
+  - `stream >> QByteArray` malformed — **security: huge declared size with short payload does NOT pre-allocate 4 GB**
+  - QByteArray null vs empty marker semantics
+  - QBuffer edges (None backing, negative seek, read past EOF)
+  - QFile edges (missing path, invalid mode, closed-file stability, WriteOnly does NOT auto-create parent dirs — pinned the doc-comment behaviour Codex flagged as misleading)
+  - `QDataStream(<wrong type>)` → TypeError
+  - QDir helpers
+- **`tests/test_dos_protection.py`** (6 tests, 5 xfail + 1 sanity pass) — **SECURITY**. Confirms a real DoS vulnerability in `MapData.read()` and `Account._setMtpAuthorization()`: malformed encrypted payloads with `count=2_000_000` and no following payload cause millions of no-op loop iterations (seconds-to-minutes of CPU depending on Python version) before the trailing `ExpectStreamStatus` raises. Tests use wall-clock measurement (`time.perf_counter()`) with a 0.5s budget — calls exceeding the budget mark themselves as xfail via in-test `pytest.xfail()` (works identically across Python 3.10-3.14). The sanity test (`test_mapdata_zero_count_does_not_loop`) confirms the test infrastructure isn't artificially slow on the happy path. Once Phase 1.0.3 fixes `MapData.read` to bail on stream-status mismatch inside the count loop, all 5 xfails will flip to expected pass.
+- **`tests/test_account_property_smoke.py`** (6 tests) — trivial getter/setter coverage for `Account.keyFile`, `Account.localKey`, `Account.MtpConfig`, `Account.isAuthorized()` (account.py lines 842, 846-847, 854, 884, 891).
+- **`tests/test_tdesktop_lifecycle.py`** (7 tests) — `PerformanceMode` toggle, `api` setter propagation to accounts, `AppVersion` property pre/post `LoadTData`, passcode-protected save/load roundtrip (exercises the non-performance-mode key-derivation branch at tdesktop.py:354-376), wrong-passcode → `TDataBadDecryptKey`.
+
+### Removed (dead code)
+- **`account.py:1004-1005`** — unused nested helper `def keysSize(list):` inside `serializeMtpAuthorization`. Both Codex and Cursor flagged it as never-called. Removed; saves ~2 coverage lines.
+
+### Dependencies
+- Added `pytest-timeout>=2.1` to `requirements-test.txt` (test-only, not a runtime dep).
+
+### Coverage
+- 186 → **247 tests passing** (61 new + 5 documented xfail).
+- `opentele.td` aggregate coverage: 88.69% → **94.99%**.
+  - `account.py`: 95% → **100%**
+  - `qdatastream.py`: 79% → **91%**
+  - `tdesktop.py`: 92% → **97%**
+- All 5 Python versions (3.10-3.14) green with the 85% CI gate.
+- CI gate ready to be ratcheted from 85% to **90%** safely (92% if user
+  accepts the qdatastream.py 91% as the new floor).
+
+### Known bugs documented (fix in 1.0.3)
+- **DoS via unbounded count loops** in `MapData.read` (lskDraft/lskDraftPosition/lskBotStorages/lskLegacyImages branches) and `Account._setMtpAuthorization` `readKeys()`. See `tests/test_dos_protection.py` xfail markers. 3-AI consultation needed on fix location.
+
 ## [1.0.1] - 2026-05-19 — opentele-ng Phase 5.1 (_settingsKey magic removed)
 
 Phase 5 deferred the upstream ``_settingsKey = FileKey(1851671142505648812)`` hardcoded magic constant fix because doing both the code change AND the test change would have violated Phase 4's "168 tests without modification" acceptance contract. With Phase 5 shipped, 1.0.1 closes that loop.
