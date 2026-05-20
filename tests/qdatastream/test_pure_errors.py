@@ -34,6 +34,7 @@ import struct
 from pathlib import Path
 
 import pytest
+
 from opentele.td.qdatastream import (
     QBuffer,
     QByteArray,

@@ -5,9 +5,10 @@
 """
 import inspect
 
+from PyQt6.QtCore import QByteArray, QDataStream, QIODevice
+
 from opentele.td import account as account_module
 from opentele.td.configs import lskType
-from PyQt6.QtCore import QByteArray, QDataStream, QIODevice
 
 
 def _stream_writer() -> tuple[QByteArray, QDataStream]:

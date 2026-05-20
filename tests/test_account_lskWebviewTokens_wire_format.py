@@ -7,8 +7,9 @@
 
 В Phase 1 (init commit `1f6a1cd`) реализовали как два uint64 — это ошибка.
 """
-from opentele.td.configs import lskType
 from PyQt6.QtCore import QByteArray, QDataStream, QIODevice
+
+from opentele.td.configs import lskType
 
 
 def _read_stream(data: QByteArray) -> QDataStream:
