@@ -43,6 +43,7 @@ import typing as t
 from pathlib import Path
 
 import pytest
+
 from opentele.td import shared as td
 from opentele.td.account import Account, MapData
 from opentele.td.configs import lskType
@@ -156,19 +157,24 @@ def _run_and_measure(callable_: t.Callable[[], None]) -> tuple[float, BaseExcept
     return elapsed, raised
 
 
-def _assert_dos_bounded_or_xfail(
+def _assert_dos_bounded(
     elapsed: float, raised: BaseException | None, label: str
 ) -> None:
-    """Common assertion helper: the call must raise, and must take less
-    than DOS_BUDGET_SEC. If it took longer, the bug is present — record
-    xfail (in-test) so CI is green but the bug is visible."""
+    """Phase 1.0.3 hard regression assertion.
+
+    The call MUST raise (corrupt input rejected) and MUST complete under
+    ``DOS_BUDGET_SEC``. If 1.0.3's ``_GuardCount`` / pre-loop cap regresses,
+    the elapsed-time assertion fails — CI goes red, NOT a quiet xfail.
+
+    The previous in-test ``pytest.xfail()`` fallback was a fail-open canary
+    that Codex/Cursor/Gemini flagged in the 1.0.3 review: once the bug is
+    fixed, xfail behaves as a regression veil. Now it's a hard fail.
+    """
     assert raised is not None, f"{label}: malformed payload didn't raise"
-    if elapsed > DOS_BUDGET_SEC:
-        pytest.xfail(
-            f"CONFIRMED DoS in {label}: malformed count loop took "
-            f"{elapsed:.2f}s (budget {DOS_BUDGET_SEC}s). Fix in 1.0.3 — "
-            "add inner ExpectStreamStatus or cap count by remaining buffer."
-        )
+    assert elapsed < DOS_BUDGET_SEC, (
+        f"DoS regression in {label}: malformed count loop took {elapsed:.3f}s "
+        f"(budget {DOS_BUDGET_SEC}s). The 1.0.3 pre-loop guard was bypassed."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -176,7 +182,7 @@ def _assert_dos_bounded_or_xfail(
 # ---------------------------------------------------------------------------
 
 
-def test_mapdata_huge_lskDraft_count_bounded_or_xfails(
+def test_mapdata_huge_lskDraft_count_bounded(
     tmp_path: Path, patch_decrypt: t.Callable[[bytes], None]
 ) -> None:
     """SECURITY: a malformed encrypted map declaring a large ``count`` for
@@ -190,10 +196,10 @@ def test_mapdata_huge_lskDraft_count_bounded_or_xfails(
 
     md = MapData(basePath=str(tmp_path))
     elapsed, raised = _run_and_measure(lambda: md.read(object(), QByteArray()))
-    _assert_dos_bounded_or_xfail(elapsed, raised, "MapData.read[lskDraft]")
+    _assert_dos_bounded(elapsed, raised, "MapData.read[lskDraft]")
 
 
-def test_mapdata_huge_lskBotStorages_count_bounded_or_xfails(
+def test_mapdata_huge_lskBotStorages_count_bounded(
     tmp_path: Path, patch_decrypt: t.Callable[[bytes], None]
 ) -> None:
     """``lskBotStorages`` — TDesktop 5.x-6.x key with the same loop
@@ -203,10 +209,10 @@ def test_mapdata_huge_lskBotStorages_count_bounded_or_xfails(
 
     md = MapData(basePath=str(tmp_path))
     elapsed, raised = _run_and_measure(lambda: md.read(object(), QByteArray()))
-    _assert_dos_bounded_or_xfail(elapsed, raised, "MapData.read[lskBotStorages]")
+    _assert_dos_bounded(elapsed, raised, "MapData.read[lskBotStorages]")
 
 
-def test_mapdata_huge_lskDraftPosition_count_bounded_or_xfails(
+def test_mapdata_huge_lskDraftPosition_count_bounded(
     tmp_path: Path, patch_decrypt: t.Callable[[bytes], None]
 ) -> None:
     """``lskDraftPosition`` has the same loop pattern as ``lskDraft``
@@ -216,10 +222,10 @@ def test_mapdata_huge_lskDraftPosition_count_bounded_or_xfails(
 
     md = MapData(basePath=str(tmp_path))
     elapsed, raised = _run_and_measure(lambda: md.read(object(), QByteArray()))
-    _assert_dos_bounded_or_xfail(elapsed, raised, "MapData.read[lskDraftPosition]")
+    _assert_dos_bounded(elapsed, raised, "MapData.read[lskDraftPosition]")
 
 
-def test_mapdata_lskLegacyImages_count_bounded_or_xfails(
+def test_mapdata_lskLegacyImages_count_bounded(
     tmp_path: Path, patch_decrypt: t.Callable[[bytes], None]
 ) -> None:
     """The legacy image-cache branches (``lskLegacyImages``,
@@ -230,10 +236,10 @@ def test_mapdata_lskLegacyImages_count_bounded_or_xfails(
 
     md = MapData(basePath=str(tmp_path))
     elapsed, raised = _run_and_measure(lambda: md.read(object(), QByteArray()))
-    _assert_dos_bounded_or_xfail(elapsed, raised, "MapData.read[lskLegacyImages]")
+    _assert_dos_bounded(elapsed, raised, "MapData.read[lskLegacyImages]")
 
 
-def test_setMtpAuthorization_huge_key_count_bounded_or_xfails(tmp_path: Path) -> None:
+def test_setMtpAuthorization_huge_key_count_bounded(tmp_path: Path) -> None:
     """SECURITY: ``Account._setMtpAuthorization()`` reads ``key_count`` then
     loops without status check (account.py:962-972). Each iteration runs
     SHA-1 over a 256-byte buffer, so this branch is more expensive than
@@ -258,7 +264,7 @@ def test_setMtpAuthorization_huge_key_count_bounded_or_xfails(tmp_path: Path) ->
     account = Account(owner=tdesk, basePath=str(tmp_path), api=API.TelegramDesktop)
 
     elapsed, raised = _run_and_measure(lambda: account._setMtpAuthorization(buf))
-    _assert_dos_bounded_or_xfail(
+    _assert_dos_bounded(
         elapsed, raised, "Account._setMtpAuthorization[readKeys]"
     )
 

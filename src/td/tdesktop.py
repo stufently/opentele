@@ -431,6 +431,27 @@ class TDesktop(BaseObject):
 
         Expects(count > 0, "accountsCount is zero, the data might has been corrupted")
 
+        # Phase 1.0.3 DoS guard: account-list count is double-bounded by
+        # (a) TDesktop's hard cap kMaxAccounts and
+        # (b) the actual bytes available in the decrypted info stream
+        #     (each entry is a single int32 index = 4 bytes).
+        # Without this, a malformed key_data blob with count=0xFFFFFFFF would
+        # spin readInt32() ~4B times before the trailing status check trips.
+        try:
+            info_bytes_available = info.stream.bytesAvailable()
+        except AttributeError:
+            info_bytes_available = None
+        max_count = TDesktop.kMaxAccounts
+        if info_bytes_available is not None:
+            max_count = min(max_count, info_bytes_available // 4)
+        if count > max_count:
+            Expects(
+                False,
+                f"Corrupt key_data: accountsCount={count} exceeds hard cap "
+                f"max_count={max_count} (kMaxAccounts={TDesktop.kMaxAccounts}, "
+                f"available={info_bytes_available} bytes). Refusing unbounded loop.",
+            )
+
         for i in range(count):
             index = info.stream.readInt32()
             if (index >= 0) and (index < TDesktop.kMaxAccounts):
