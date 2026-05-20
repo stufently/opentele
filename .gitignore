@@ -15,3 +15,6 @@ TASKS.md
 TODO.md
 .coverage
 htmlcov/
+venv/
+opentele_ng.egg-info/
+*.egg-info/

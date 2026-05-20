@@ -1,2 +1,0 @@
-telethon<2,>=1.36
-tgcrypto-pyrofork>=1.2.7
