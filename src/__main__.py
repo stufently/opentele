@@ -188,7 +188,22 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+def _ensure_utf8_stdout() -> None:
+    """Windows consoles default to cp1251/cp437 which can't render the box-drawing
+    glyphs (└─) we use in the info output. Try to upgrade stdout to UTF-8."""
+    for stream_name in ("stdout", "stderr"):
+        stream = getattr(sys, stream_name, None)
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, OSError, ValueError):
+            pass
+
+
 def main(argv: list[str] | None = None) -> int:
+    _ensure_utf8_stdout()
     parser = build_parser()
     args = parser.parse_args(argv)
     try:

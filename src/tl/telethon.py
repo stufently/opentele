@@ -4,6 +4,9 @@ import logging
 import warnings
 from typing import Awaitable
 
+from telethon import (
+    types,  # noqa: F401  # used as namespace via configs star-import; explicit defends against shadowing by stdlib `types` in some envs (Windows)
+)
 from telethon.errors.rpcerrorlist import (
     AuthTokenAlreadyAcceptedError,
     AuthTokenExpiredError,

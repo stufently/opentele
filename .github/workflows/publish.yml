@@ -78,5 +78,7 @@ jobs:
           name: dist
           path: dist/
 
-      - name: Publish
+      - name: Publish (with PEP 740 attestations)
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          attestations: true

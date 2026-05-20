@@ -3,6 +3,7 @@
 Example usages for **opentele-ng**.
 
 - [CLI quick start](cli-quick-start.md) — `opentele-ng info`, `opentele-ng convert` (added in v1.1.0)
+- [Docker image](docker.md) — `ghcr.io/stufently/opentele-ng` (added in v1.2.0)
 - [Convert tdata to Telethon](convert-tdata-to-telethon.md)
 - [Convert Telethon to tdata](convert-telethon-to-tdata.md)
 - [Batch-convert many tdata folders](batch-convert.md) — parallel conversion + read-only inspection (added in v1.1.0)

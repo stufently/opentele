@@ -33,6 +33,7 @@ nav:
   - Home: index.md
   - Examples:
       - CLI quick start: examples/cli-quick-start.md
+      - Docker: examples/docker.md
       - tdata → Telethon: examples/convert-tdata-to-telethon.md
       - Telethon → tdata: examples/convert-telethon-to-tdata.md
       - Batch conversion: examples/batch-convert.md

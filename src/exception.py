@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-import types
+import types as _stdlib_types  # private alias: star-imports must not shadow telethon.types in src/tl/*
 import typing
 
 from opentele.td.qdatastream import QDataStream
@@ -319,7 +319,7 @@ def Expects(
     else:
         stack = inspect.stack()
         frame = stack[stack_index].frame
-        tb = types.TracebackType(None, frame, frame.f_lasti, frame.f_lineno)  # type: ignore
+        tb = _stdlib_types.TracebackType(None, frame, frame.f_lasti, frame.f_lineno)  # type: ignore
         exception = exception.with_traceback(tb)
 
         if fail != None:

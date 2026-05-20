@@ -1,0 +1,61 @@
+name: Bug report
+description: Something doesn't work as expected.
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: opentele-ng version
+      description: Output of `opentele-ng --version` or `python -c 'import opentele; print(opentele.__version__)'`.
+      placeholder: "1.2.0"
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "3.13.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install?
+      options:
+        - pip install opentele-ng
+        - pip install opentele-ng + Docker
+        - pip install -e . from source
+        - Docker (ghcr.io/stufently/opentele-ng)
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the actual behavior. Include full Python traceback if any.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproducer
+      description: |
+        Minimal code or shell command that triggers the bug. Please don't include real auth keys
+        or session tokens — use synthetic / fixture data. If you suspect a wire-format issue,
+        attach the output of `opentele-ng info <tdata> --json`.
+      render: python
+    validations:
+      required: true

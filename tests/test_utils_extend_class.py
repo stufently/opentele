@@ -8,6 +8,7 @@ from __future__ import annotations
 import sys
 
 import pytest
+
 from opentele.utils import extend_class, override
 
 

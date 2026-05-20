@@ -1,0 +1,26 @@
+# Build context exclusions — keep `docker build .` small + reproducible.
+.git
+.github
+.venv
+.env
+.env.*
+.ruff_cache
+.pytest_cache
+.mypy_cache
+__pycache__
+*.pyc
+*.pyo
+build/
+dist/
+opentele_ng.egg-info/
+
+# Tests + benchmarks live in CI, not in the production image.
+tests/
+docs/build/
+docs/documentation/
+
+# Local-only artifacts
+opentele             # symlink created by `pip install -e .`
+claude/              # private session notes
+node_modules/
+site/                # mkdocs output

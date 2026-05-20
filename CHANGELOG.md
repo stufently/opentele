@@ -3,6 +3,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-05-20 — Docker image + supply-chain hardening + forks watch
+
+### Fixed (Windows regressions reported on 1.1.0)
+- **`opentele-ng info` crashed on Windows consoles (cp1251 / cp437)** with `UnicodeEncodeError` on the `└─` box-drawing character. `_ensure_utf8_stdout()` now reconfigures `sys.stdout` / `sys.stderr` to UTF-8 at CLI startup (safely no-ops on streams without `reconfigure`, e.g. `io.StringIO` under pytest).
+- **`opentele-ng convert` (default `CreateNewSession` mode) crashed with `AttributeError: module 'types' has no attribute 'auth'`** during QR-login. `src/tl/telethon.py` now imports `telethon.types` explicitly — previously it relied on `from .configs import *` which in some environments was shadowed by the stdlib `types` module (e.g. when `src/exception.py` ran `import types` earlier in the import order). Added 2 regression tests in `tests/test_cli.py`.
+
+### Added
+- **Docker image** at `ghcr.io/stufently/opentele-ng` — multi-arch (linux/amd64 + linux/arm64), ~140 MB, non-root user, `opentele-ng` as entrypoint. Tags: `:latest`, `:1.2.0`, `:1.2`, `:1`, `:main`, `:sha-<7>`. Built + pushed by `.github/workflows/docker.yml` on every push to `main` and on every `v*` tag.
+- **`docs/examples/docker.md`** — full Docker usage guide (info, convert, batch, air-gapped, Sigstore verification).
+- **PEP 740 attestations** on PyPI uploads — `pypa/gh-action-pypi-publish` configured with `attestations: true`. Combined with Trusted Publishing this gives end-to-end signed provenance from GitHub commit → wheel on PyPI.
+- **Build provenance + SBOM on the Docker image** — `docker/build-push-action` runs with `provenance: true` + `sbom: true`, plus `actions/attest-build-provenance` for the OCI registry. Verifiable via `gh attestation verify oci://ghcr.io/stufently/opentele-ng:1.2.0 --repo stufently/opentele`.
+- **`.github/dependabot.yml`** — weekly PRs for pip / GitHub Actions / Docker base image updates.
+- **`.github/workflows/codeql.yml`** — CodeQL static analysis on push, PR, and weekly schedule.
+- **`.github/ISSUE_TEMPLATE/`** + **`.github/pull_request_template.md`** — structured forms for bug reports, wire-format mismatches, feature requests, and PR submissions.
+- **`.pre-commit-config.yaml`** — ruff + check-yaml + detect-private-key. `pre-commit install` once → ruff/CI surprises stop. Pinned to `ruff 0.15.13` to match CI.
+- **`.github/workflows/forks-watch.yml`** + **`scripts/fork_watch.py`** — monthly (1st of month, 12:00 UTC) scan of public forks of `thedemons/opentele` for new commits. Generates a Markdown report and **opens it as a GitHub Issue** (label `forks-watch`) so it lands in the maintainer's notifications. No secrets — uses the default `GITHUB_TOKEN`.
+
+### Verified
+- `docker build -t opentele-ng:dev . && docker run --rm opentele-ng:dev info /tdata` works end-to-end on a real Telegram Desktop tdata (TD 6.0.6). `mainAccount_index` reads correctly (regression catch from 1.1.0).
+- Manual run of `python scripts/fork_watch.py` returns a clean Markdown report against the current public fork graph (1 fork with activity in last 35 days).
+- 262 tests pass on Python 3.10–3.14, coverage 94.83% on `opentele.td` (unchanged).
+
 ## [1.1.0] - 2026-05-20 — CLI, pyproject.toml, Trusted Publishing, docs site
 
 First minor bump since 1.0.0. Major theme: bring the project up to modern Python packaging standards (PEP 621 pyproject, PEP 561 typing marker, Trusted Publishing) and ship a native CLI so the 80% conversion case no longer requires hand-rolled Python.

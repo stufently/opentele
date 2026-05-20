@@ -1,0 +1,52 @@
+name: Wire-format mismatch
+description: opentele-ng fails to read or writes the wrong bytes for a Telegram Desktop tdata.
+labels: ["wire-format", "bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **For security:** never include the full contents of your `tdata` folder in a public issue.
+        Account keys and session tokens live in there. Use the `info` CLI to share metadata only.
+
+  - type: input
+    id: tdesktop-version
+    attributes:
+      label: Telegram Desktop version
+      description: The version that produced the tdata folder (Settings → About).
+      placeholder: "6.0.8"
+    validations:
+      required: true
+
+  - type: input
+    id: opentele-version
+    attributes:
+      label: opentele-ng version
+      placeholder: "1.2.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: info-output
+    attributes:
+      label: Output of `opentele-ng info <tdata> --json`
+      description: This is **read-only and metadata-only** — no auth keys leak.
+      render: json
+    validations:
+      required: true
+
+  - type: textarea
+    id: error
+    attributes:
+      label: Error / unexpected behavior
+      description: Full Python traceback or description of what went wrong.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: comparison
+    attributes:
+      label: (Optional) Comparison against upstream opentele or PyQt5/6 directly
+      description: |
+        If you have output from `thedemons/opentele` or a PyQt-based reader on the same tdata,
+        paste the relevant difference here. This helps localize the lskType.

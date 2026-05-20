@@ -4,6 +4,7 @@ import subprocess
 import sys
 
 import pytest
+
 from opentele.__main__ import build_parser, main
 
 
@@ -90,3 +91,29 @@ def test_main_with_help_arg_raises_systemexit():
     with pytest.raises(SystemExit) as exc_info:
         main(["--help"])
     assert exc_info.value.code == 0
+
+
+def test_telethon_module_has_types_namespace():
+    """Regression: user-reported Windows bug — `from .configs import *` star-import
+    was failing to surface `types` in some envs, so `types.auth.LoginTokenSuccess`
+    in QR-login crashed with AttributeError. Now `from telethon import types`
+    is explicit at the top of src/tl/telethon.py."""
+    from opentele.tl import telethon as tl_module
+    assert hasattr(tl_module, "types"), \
+        "telethon namespace `types` must be importable in src/tl/telethon.py"
+    assert hasattr(tl_module.types, "auth"), \
+        "types.auth must resolve to telethon.types.auth (not stdlib types)"
+
+
+def test_ensure_utf8_stdout_does_not_crash_when_unavailable():
+    """Regression: Windows cp1251 console crashed CLI info output on `└─`.
+    _ensure_utf8_stdout should tolerate streams without `reconfigure`."""
+    import io
+
+    from opentele.__main__ import _ensure_utf8_stdout
+    saved = sys.stdout
+    try:
+        sys.stdout = io.StringIO()  # no .reconfigure()
+        _ensure_utf8_stdout()       # must not raise
+    finally:
+        sys.stdout = saved

@@ -1,0 +1,32 @@
+# pre-commit hooks for opentele-ng.
+#
+# Setup:
+#   pip install pre-commit
+#   pre-commit install
+#
+# After this, `git commit` will automatically run ruff + check basic file
+# hygiene before letting the commit go through.
+#
+# Important: pre-commit runs ruff in its OWN isolated venv (no `opentele -> src`
+# symlink visible), so it mirrors what CI sees — which is the whole point.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.13
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        files: ^(src|tests)/
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+        exclude: ^(src/devices\.py|docs/.*\.html)$
+      - id: trailing-whitespace
+        exclude: ^src/devices\.py$
+      - id: check-added-large-files
+        args: [--maxkb=200]
+      - id: detect-private-key

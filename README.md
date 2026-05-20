@@ -40,6 +40,8 @@ this one ships it.
 
 ## Install
 
+### PyPI
+
 ```bash
 pip install opentele-ng
 ```
@@ -55,6 +57,18 @@ from opentele.api import API, CreateNewSession
 System libraries (`libgl1`, `libegl1`, `libxkbcommon-x11-0`, etc.) are **not**
 required — you can deploy on Alpine, distroless, serverless, or any minimal
 Linux container.
+
+### Docker (v1.2.0+)
+
+Multi-arch image at **`ghcr.io/stufently/opentele-ng`** (linux/amd64 + linux/arm64), ~140 MB, runs as non-root, `opentele-ng` is the entrypoint:
+
+```bash
+docker run --rm \
+    -v "/path/to/Telegram/tdata:/tdata:ro" \
+    ghcr.io/stufently/opentele-ng:latest info /tdata
+```
+
+See [`docs/examples/docker.md`](docs/examples/docker.md) for batch / convert / air-gapped / Sigstore verification.
 
 ## CLI — one-shot workflows (v1.1.0+)
 
@@ -114,7 +128,7 @@ asyncio.run(main())
 
 ## Status
 
-- Latest: **`v1.1.0`** (2026-05-20). PyPI: [`opentele-ng 1.1.0`](https://pypi.org/project/opentele-ng/). Production-ready. 1.1.0 adds the `opentele-ng` CLI, PEP 621 pyproject.toml, Trusted Publishing on tag push, `py.typed` marker, and a GitHub Pages docs site.
+- Latest: **`v1.2.0`** (2026-05-20). PyPI: [`opentele-ng`](https://pypi.org/project/opentele-ng/) / Docker: [`ghcr.io/stufently/opentele-ng`](https://ghcr.io/stufently/opentele-ng). Production-ready. 1.2.0 adds the multi-arch Docker image, PEP 740 PyPI attestations, OCI provenance + SBOM, Dependabot, CodeQL, pre-commit hooks, structured issue templates, and a monthly forks-watch job that opens GitHub Issues with new upstream activity.
 - 262 tests pass on Python 3.10 / 3.11 / 3.12 / 3.13 / 3.14 (Docker matrix +
   GitHub Actions matrix × Ubuntu / macOS / Windows).
 - `opentele.td` package coverage: **94.83%** (CI gate 90%).
