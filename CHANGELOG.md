@@ -1,6 +1,18 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed (packaging)
+- `MANIFEST.in`: added missing `include` keyword on `requirements.txt` — wheel builds from sdist were failing with `FileNotFoundError: 'requirements.txt'`. Also added explicit `include` for README.md, LICENSE, CHANGELOG.md, ACKNOWLEDGMENTS.md, SECURITY.md and `recursive-include docs/examples`.
+
+### Changed
+- `scripts/publish.sh` switched from host `pip install build twine` to a Docker container (`python:3.13-slim` with `--user $UID:$GID`). Resolves PEP 668 "externally-managed-environment" on modern host distros and keeps `dist/` artifacts owned by the invoking user.
+
+### Verified
+- `opentele-ng 1.0.3` published to PyPI: <https://pypi.org/project/opentele-ng/1.0.3/>.
+- Cross-impl byte-identity check on 2 real tdata folders (TD 6.0.6 + TD 6.0.8) — `opentele-ng` matches `opentele-tg` (PyQt5) and `opentele2` (pure-Python DedInc fork) **byte-for-byte** on `serializeMtpAuthorization()`, `authKey`, `localKey`, `UserId`, `MainDcId`. On TD 6.0.6 tdata, `opentele-tg` crashes (`No account has been loaded`) because it lacks Phase 1.5 lskTypes 0x1A-0x1E — confirms our wire-format fixes are load-bearing for current Telegram Desktop tdata in the wild.
+
 ## [1.0.3] - 2026-05-20 — DoS fix in MapData count loops (security)
 
 Closes the **DoS vulnerability** documented in 1.0.2's `tests/test_dos_protection.py` xfail canaries. Phase 1.0.2 found that several count-driven loops in `MapData.read()` and `Account._setMtpAuthorization.readKeys()` had no upper-bound check on attacker-controlled `count` fields — a malformed tdata blob with `count = 0xFFFFFFFF` (~4 billion iterations) would spin for minutes consuming CPU before the trailing `ExpectStreamStatus` finally tripped.

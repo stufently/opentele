@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# opentele-ng — PyPI publish helper.
+# opentele-ng — PyPI publish helper (Docker-based).
 #
 # Reads PYPI_API_TOKEN (or TEST_PYPI_API_TOKEN with --test) from .env in the
-# repo root. Builds a sdist + wheel via `python -m build` and uploads via
-# `twine upload`.
+# repo root. Builds a sdist + wheel inside a python:3.13-slim container,
+# runs `twine check`, then uploads via `twine upload`.
 #
 # Usage:
 #   scripts/publish.sh           # → publish to https://pypi.org
 #   scripts/publish.sh --test    # → publish to https://test.pypi.org
 #   scripts/publish.sh --dry-run # → build only, no upload
 #
-# Requires:  python -m pip install build twine
+# Requires:  docker
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -22,10 +22,11 @@ if [[ ! -f "$REPO_ROOT/.env" ]]; then
     exit 1
 fi
 
-set -a
+# Source .env WITHOUT `set -a` — variables stay as shell-local, not exported
+# to child processes' environments (so docker subprocesses don't inherit them,
+# and they don't appear in /proc/<pid>/environ for the parent shell either).
 # shellcheck source=/dev/null
 source "$REPO_ROOT/.env"
-set +a
 
 # --- parse flags ------------------------------------------------------------
 target_repo="pypi"
@@ -44,7 +45,7 @@ for arg in "$@"; do
             dry_run=1
             ;;
         -h|--help)
-            sed -n '2,12p' "$0"
+            sed -n '2,13p' "$0"
             exit 0
             ;;
         *)
@@ -59,40 +60,51 @@ if [[ $dry_run -eq 0 && -z "$token" ]]; then
     exit 1
 fi
 
-# --- pre-flight: clean stale builds ----------------------------------------
+IMG="python:3.13-slim"
+
 echo "==> Cleaning build artifacts"
 rm -rf build/ dist/ ./*.egg-info/
 
-# --- pre-flight: install build deps ----------------------------------------
-echo "==> Ensuring build + twine present"
-python -m pip install --quiet --upgrade build twine
-
-# --- build ------------------------------------------------------------------
-echo "==> Building sdist + wheel"
+# Compose the in-container script
+build_step='set -e
+cd /work
+pip install --quiet --upgrade build twine
 python -m build
-
-echo
-echo "==> Artifacts:"
 ls -la dist/
+python -m twine check dist/*'
 
-# --- check ------------------------------------------------------------------
-echo
-echo "==> twine check"
-python -m twine check dist/*
+echo "==> Building (sdist + wheel) inside $IMG"
+docker run --rm \
+    -v "$REPO_ROOT:/work" \
+    -w /work \
+    --user "$(id -u):$(id -g)" \
+    -e HOME=/tmp \
+    "$IMG" bash -c "$build_step"
 
-# --- upload -----------------------------------------------------------------
 if [[ $dry_run -eq 1 ]]; then
     echo
     echo "==> --dry-run: skipping upload."
+    echo "Artifacts:"
+    ls -la dist/
     exit 0
 fi
 
 echo
 echo "==> Uploading to $target_repo ($target_url)"
-TWINE_USERNAME=__token__ \
-TWINE_PASSWORD="$token" \
-TWINE_REPOSITORY_URL="$target_url" \
-    python -m twine upload --non-interactive dist/*
+# Pass token via host env var (not argv) so it doesn't show in `ps` output.
+TWINE_PASSWORD="$token" docker run --rm \
+    -v "$REPO_ROOT:/work" \
+    -w /work \
+    --user "$(id -u):$(id -g)" \
+    -e HOME=/tmp \
+    -e TWINE_USERNAME=__token__ \
+    -e TWINE_PASSWORD \
+    -e TWINE_REPOSITORY_URL="$target_url" \
+    "$IMG" bash -c '
+        set -e
+        pip install --quiet --upgrade twine
+        python -m twine upload --non-interactive dist/*
+    '
 
 echo
 echo "==> Done. Verify at:"

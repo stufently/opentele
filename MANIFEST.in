@@ -1,3 +1,8 @@
-global-exclude *test.py
-global-exclude *tests.py
-requirements.txt
+include requirements.txt
+include README.md
+include LICENSE
+include CHANGELOG.md
+include ACKNOWLEDGMENTS.md
+include SECURITY.md
+recursive-include docs/examples *.md
+prune tests
