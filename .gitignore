@@ -18,3 +18,4 @@ htmlcov/
 venv/
 opentele_ng.egg-info/
 *.egg-info/
+opentele
