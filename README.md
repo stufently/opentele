@@ -128,7 +128,7 @@ asyncio.run(main())
 
 ## Status
 
-- Latest: **`v1.2.1`** (2026-05-20). PyPI: [`opentele-ng`](https://pypi.org/project/opentele-ng/) / Docker: [`ghcr.io/stufently/opentele-ng`](https://ghcr.io/stufently/opentele-ng) (now on Python 3.14). Production-ready. 1.2.1 adds `QFile.bytesAvailable()`, CLI integration tests on real fixture tdata, expanded coverage gate to the whole package (was just `.td`), and cleanup of stale upstream docs.
+- Latest: **`v1.2.2`** (2026-05-20). PyPI: [`opentele-ng`](https://pypi.org/project/opentele-ng/) / Docker: [`ghcr.io/stufently/opentele-ng`](https://ghcr.io/stufently/opentele-ng) (Python 3.14). Production-ready. 1.2.2 fixes a long-standing upstream data bug (missing comma in `devices.py` was concatenating two Huawei device names into a bogus single entry), moves the 174 KB of device fingerprint tables out of `devices.py` into `devices.json` (-90% file size, lazy-loaded), closes 5 CodeQL findings, and creates the missing GH labels referenced by issue templates.
 - 270 tests pass on Python 3.10 / 3.11 / 3.12 / 3.13 / 3.14 (Docker matrix +
   GitHub Actions matrix × Ubuntu / macOS / Windows).
 - Coverage: **83.48% on the whole `opentele` package** (CI gate 80% on full package, was 90% on `opentele.td` only — that subset is still 94.83%).

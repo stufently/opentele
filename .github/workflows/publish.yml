@@ -20,8 +20,33 @@ permissions:
   contents: read
 
 jobs:
+  test:
+    name: Test before publish
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libegl1 libxkbcommon-x11-0 libdbus-1-3 libglib2.0-0
+
+      - name: Install package + test deps
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[test]"
+
+      - name: Run full test suite
+        run: pytest --tb=short --ignore=tests/tdata_test.py --cov=opentele --cov-fail-under=80 tests/
+
   build:
     name: Build sdist + wheel
+    needs: test
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4

@@ -89,7 +89,7 @@ docker build -t opentele-ng:dev .
 docker run --rm opentele-ng:dev --version
 ```
 
-The `Dockerfile` is multi-stage (build wheel → install in slim final image), pinned to `python:3.13-slim`, runs as a non-root user `app`. End image is the same one published to GHCR — only the registry / tagging differs.
+The `Dockerfile` is multi-stage (build wheel → install in slim final image), pinned to `python:3.14-slim` by digest, runs as a non-root user `app` (UID/GID `10001:10001`). End image is the same one published to GHCR — only the registry / tagging differs.
 
 ## Air-gapped / offline
 

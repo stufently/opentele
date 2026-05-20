@@ -4,5 +4,7 @@ include LICENSE
 include CHANGELOG.md
 include ACKNOWLEDGMENTS.md
 include SECURITY.md
+include src/py.typed
+include src/devices.json
 recursive-include docs/examples *.md
 prune tests

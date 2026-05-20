@@ -511,7 +511,10 @@ def test_QFile_bytesAvailable_after_open_equals_size(tmp_path: Path) -> None:
     p = tmp_path / "data.bin"
     p.write_bytes(b"hello world!" * 100)  # 1200 bytes
     f = QFile(str(p))
-    assert f.open(Mode.ReadOnly) is True
+    # Don't put f.open() inside an `assert` — under `python -O` asserts are
+    # stripped and the file would never open, hiding any test failure.
+    opened = f.open(Mode.ReadOnly)
+    assert opened is True
     try:
         assert f.bytesAvailable() == 1200
     finally:

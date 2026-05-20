@@ -46,3 +46,26 @@ jobs:
         # that need network and `api.py` device-fingerprint paths exercised by
         # a separate runtime test).
         run: pytest -v --tb=short --ignore=tests/tdata_test.py --cov=opentele --cov-report=term-missing --cov-fail-under=80 tests/
+
+      - name: Wheel install smoke (catches package-data drift)
+        # Editable install hides MANIFEST.in / package-data bugs. Build a real
+        # wheel, install into a fresh venv, and import — this is what end
+        # users actually do via `pip install opentele-ng`.
+        if: runner.os == 'Linux'
+        run: |
+          python -m pip install --upgrade build
+          python -m build --wheel --outdir /tmp/wheel
+          python -m venv /tmp/smoke-venv
+          /tmp/smoke-venv/bin/pip install /tmp/wheel/opentele_ng-*.whl
+          /tmp/smoke-venv/bin/python -c "
+          import opentele, importlib.resources, sys
+          # devices.json must ship as package data — otherwise device fingerprinting crashes at runtime.
+          assert (importlib.resources.files('opentele') / 'devices.json').is_file(), 'devices.json not in wheel'
+          assert (importlib.resources.files('opentele') / 'py.typed').is_file(), 'py.typed not in wheel'
+          from opentele.api import API
+          api = API.TelegramAndroid.Generate(unique_id='ci-smoke')
+          assert api.device_model and api.system_version, 'device fingerprint generation broken'
+          # USP holds end-to-end
+          assert not any(m.startswith('PyQt') for m in sys.modules), 'Qt accidentally pulled in'
+          print(f'OK opentele-ng {opentele.__version__} wheel install end-to-end')
+          "

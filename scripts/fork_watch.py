@@ -50,9 +50,14 @@ def gh_get(path: str) -> object:
 
 
 def list_forks(repo: str) -> list[dict]:
+    """Paginate ALL forks (not just first N pages of 'newest'). Codex noted
+    that 'sort=newest' orders by creation, so an OLD fork with a RECENT push
+    can be missed if it doesn't fit in the first 100. Sort locally by
+    ``pushed_at`` instead.
+    """
     out: list[dict] = []
-    for page in range(1, 4):  # cap at 300 forks; upstream has <200
-        chunk = gh_get(f"repos/{repo}/forks?per_page=100&sort=newest&page={page}")
+    for page in range(1, 11):  # up to 1000 forks (upstream has <200 as of 2026-05)
+        chunk = gh_get(f"repos/{repo}/forks?per_page=100&page={page}")
         if not isinstance(chunk, list):
             # GitHub returns a dict on rate limit / auth failure.
             msg = chunk.get("message", "non-list response") if isinstance(chunk, dict) else "?"
@@ -63,6 +68,7 @@ def list_forks(repo: str) -> list[dict]:
         out.extend(chunk)
         if len(chunk) < 100:
             break
+    out.sort(key=lambda f: f.get("pushed_at") or "", reverse=True)
     return out
 
 

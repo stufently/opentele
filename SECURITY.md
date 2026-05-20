@@ -23,7 +23,7 @@ of bug that lets a crafted input do one of the following is in scope:
 **Do not open a public GitHub issue for a security report.**
 
 Email the maintainer privately at the address in
-[`setup.py:author_email`](setup.py), or open a
+[`pyproject.toml`](pyproject.toml) (`project.authors[0].email`), or open a
 [GitHub Security Advisory](https://github.com/stufently/opentele/security/advisories/new)
 for this repo.
 

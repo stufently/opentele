@@ -37,6 +37,8 @@ def _account_summary(account: Any, idx: int) -> dict[str, Any]:
             if not callable(v) and v is not None:
                 info[attr] = v
         except Exception:
+            # Diagnostic summary should not crash the whole `info` command on
+            # a single broken account — fall through and skip this attribute.
             pass
     try:
         ak = getattr(account, "authKey", None)
@@ -123,6 +125,9 @@ async def _convert_async(tdata_path: Path, session_path: Path, *, flag_use_curre
             if asyncio.iscoroutine(res):
                 await res
     except Exception:
+        # Disconnect cleanup is best-effort — the .session file was already
+        # written by Telethon during ToTelethon(). A failed disconnect here
+        # shouldn't fail the convert.
         pass
 
     if not session_path.exists():

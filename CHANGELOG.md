@@ -3,6 +3,39 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-05-20 — Devices JSON refactor + CodeQL findings + GH labels + CI hardening
+
+### Known issues (filed for follow-up release)
+
+Surfaced by the project-wide 3-AI review during 1.2.2. None are runtime regressions vs 1.2.1, but they should be addressed in a follow-up release:
+
+1. **`kPerformanceMode = True` is the default**, which means new tdata created via `TDesktop.SaveTData(path)` (no passcode) is encrypted with a hard-coded `localKey` — i.e. effectively unencrypted. This is upstream behaviour, but should be opt-in rather than default. Flip default in 1.3.0 + deprecation warning.
+2. **Non-ASCII local passcodes crash** with `UnicodeEncodeError` instead of a domain `OpenTeleException` (`src/td/tdesktop.py:130/200/265` encode as ASCII). Cyrillic/emoji passcodes unsupported.
+3. **`StorageAccount.start()` skips reading `config` when in performance mode** (`src/td/account.py:631`), which means certain MTP config fields are lost on re-save. Performance toggle should not change data semantics.
+4. **Unknown `lskType` keys** are logged but their payload is not skipped (`src/td/account.py:329`), so a future TDesktop with a new lskType will desync the read cursor. Need either fail-fast strict mode or generic length-skip.
+5. **Docker runtime deps not lock-hashed.** `telethon>=1.36,<2` + `tgcrypto-pyrofork>=1.2.7` resolve fresh at image build. Reproducible image needs a constraints lock file.
+
+### Fixed
+
+### Fixed
+- **`src/devices.py:5333` — data bug from upstream**: `"Huawei MediaPad 7 Vogue" "Huawei LEO-BX9",` (missing comma) was being silently concatenated by Python into a single bogus device name `"Huawei MediaPad 7 VogueHuawei LEO-BX9"` — and the real `LEO-BX9` was missing from the device fingerprint list. CodeQL warning `py/implicit-string-concatenation-in-list` caught it. The Android device list now has 4870 entries (was 4869).
+- **`tests/qdatastream/test_pure_errors.py:514` — `py/side-effect-in-assert`**: `assert f.open(Mode.ReadOnly) is True` is invalid under `python -O` (asserts stripped → file never opens, test silently passes). Split into `opened = f.open(...); assert opened is True`. CodeQL ERROR closed.
+- **`src/__main__.py:39, 125` — `py/empty-except`**: added explanatory comments so reviewers / CodeQL see the intent (best-effort diagnostic / cleanup paths).
+
+### Changed
+- **`src/devices.py`: 174 KB → 17 KB** (-90%). The four huge `device_models` lists (Desktop 790, macOS 37, Android 4870, iOS 20) moved to `src/devices.json`, loaded once on import via `_load_devices_json()`. Class-level `device_models: List[str] = _DATA["..."]["device_models"]` line replaces ~5700 lines of Python list literals. `system_versions` lists stay inline — they're tiny and carry valuable per-version comments.
+- **`pyproject.toml`** + **`MANIFEST.in`**: ship `src/devices.json` as package data so wheel users get it.
+
+### Added
+- **`scripts/extract_devices_data.py`** — one-shot extractor: reads the in-memory class attributes and writes `src/devices.json`. Re-run when device lists change. Idempotent.
+- **`scripts/slim_devices_py.py`** — one-shot rewriter: replaces literal `device_models = [...]` blocks in `devices.py` with JSON-backed references. Idempotent (no-op if already migrated).
+- **Repository labels created** via `gh label create`: `wire-format`, `forks-watch`, `dependencies`, `python`, `ci`, `docker`, `security`. Issue templates that reference them now actually attach the labels on submit (Cursor + Codex catch from 1.2.0 review).
+
+### Verified
+- 270 tests pass on Python 3.10–3.14, coverage 83.55% on the whole package.
+- **Regression sentinel on 2 real Telegram Desktop tdata folders** (TD 6.0.6 + TD 6.0.8) under `/home/deploy/autootvetchik/opentelettesttdata/`: `authKey_sha256` matches the stored values byte-for-byte (`544e4b3edf450a18…` for tdatanew, `775161c1b987143b…` for Telegram_27637711346). Zero wire-format regression from the JSON refactor.
+- `docker pull ghcr.io/stufently/opentele-ng:1.2.2 && docker run --rm … info /tdata` works on both fixtures with `mainAccount_index = 0`.
+
 ## [1.2.1] - 2026-05-20 — Coverage scope, QFile.bytesAvailable, Py3.14 Docker, cleanup
 
 ### Changed
