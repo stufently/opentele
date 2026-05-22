@@ -8,6 +8,7 @@ on:
   schedule:
     # Weekly Monday scan (catches new CVEs against unchanged code).
     - cron: "27 4 * * 1"
+  workflow_dispatch:
 
 permissions:
   contents: read
