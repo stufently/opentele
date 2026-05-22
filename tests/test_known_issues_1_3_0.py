@@ -52,7 +52,6 @@ def test_kPerformanceMode_default_is_False():
     it via the toggle). Instead, grep the source file for the literal default
     — that's the durable assertion.
     """
-    tdesktop_src = Path(TDesktop.__module__.replace(".", "/"))
     src_file = Path(__file__).resolve().parent.parent / "src" / "td" / "tdesktop.py"
     text = src_file.read_text(encoding="utf-8")
     assert "kPerformanceMode: bool = False" in text, \
