@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-05-22
+
+### Added
+- **`TelegramClient.FromBundle(json_path, proxy, **kwargs)`** — новый статический метод для создания авторизованного `TelegramClient` из JSON-бандла (формат: `app_id` + `app_hash` + рядом лежащий `.session`-файл или встроенная `string_session`). Поддерживает все распространённые имена ключей строковой сессии: `string_session`, `session_string`, `telethon_string`, `telethon_session`. Возвращает подключённый клиент — вызывающий код отвечает за `disconnect()`.
+
 ## [1.3.0] - 2026-05-20 — Known-issues sweep: security default, UTF-8 passcode, strict lskType, Docker lock
 
 Closes the 5 architectural items filed under "Known issues" in 1.2.2. Two of them are **behaviour changes** (security default + unknown-key strict mode); the rest are bug fixes.

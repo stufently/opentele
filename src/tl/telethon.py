@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 import logging
 import warnings
+from pathlib import Path
 from typing import Awaitable
 
 from telethon import (
@@ -750,6 +752,89 @@ class TelegramClient(telethon.TelegramClient, BaseObject):
         return await td.TDesktop.FromTelethon(
             self, flag=flag, api=api, password=password
         )
+
+    @staticmethod
+    async def FromBundle(
+        json_path: Union[str, Path],
+        proxy: Union[tuple, dict] = None,
+        **kwargs,
+    ) -> TelegramClient:
+        """Create an authorized TelegramClient from a JSON bundle file.
+
+        A bundle is a JSON file containing ``app_id`` / ``app_hash`` credentials
+        paired with a Telethon ``.session`` SQLite file of the same base name in
+        the same directory.  The JSON may also embed the session directly as a
+        Telethon string session under any of the common key names
+        (``string_session``, ``session_string``, ``telethon_string``,
+        ``telethon_session``).
+
+        ### Arguments:
+            json_path (`str` | `Path`):
+                Path to the bundle ``.json`` file.
+
+            proxy (`tuple` | `dict`, default=`None`):
+                Telethon-compatible proxy passed straight to `TelegramClient`.
+
+            **kwargs:
+                Extra keyword arguments forwarded to `TelegramClient.__init__`.
+
+        ### Returns:
+            A connected (but not yet disconnected) `TelegramClient`.  The caller
+            is responsible for calling ``.disconnect()`` when done.
+
+        ### Raises:
+            `FileNotFoundError`: If the JSON file does not exist.
+            `ValueError`: If ``app_id`` or ``app_hash`` are missing in the JSON.
+
+        ### Examples:
+        ```python
+            client = await TelegramClient.FromBundle(
+                "accounts/myaccount/myaccount.json",
+                proxy=(socks.SOCKS5, "proxy.example.com", 1080),
+            )
+            await client.PrintSessions()
+            await client.disconnect()
+        ```
+        """
+        from telethon.sessions import StringSession
+
+        json_path = Path(json_path)
+        if not json_path.exists():
+            raise FileNotFoundError(f"Bundle JSON not found: {json_path}")
+
+        with open(json_path, encoding="utf-8") as fh:
+            cfg = json.load(fh)
+
+        api_id = int(cfg.get("app_id") or cfg.get("api_id") or 0)
+        api_hash = str(cfg.get("app_hash") or "")
+        if not api_id or not api_hash:
+            raise ValueError(f"Bundle JSON missing app_id/app_hash: {json_path}")
+
+        # Resolve string session (multiple common key names)
+        string_session: str = ""
+        for key in ("string_session", "session_string", "telethon_string", "telethon_session"):
+            if cfg.get(key):
+                string_session = cfg[key]
+                break
+
+        if string_session:
+            client: TelegramClient = TelegramClient(
+                StringSession(string_session), api_id, api_hash, proxy=proxy, **kwargs
+            )
+        else:
+            session_file = cfg.get("session_file") or json_path.stem
+            session_path = json_path.parent / (_Path(session_file).stem + ".session")
+            if not session_path.exists():
+                raise FileNotFoundError(
+                    f"Bundle .session file not found: {session_path}"
+                )
+            # Pass path without extension — Telethon appends .session itself
+            client = TelegramClient(
+                str(session_path.with_suffix("")), api_id, api_hash, proxy=proxy, **kwargs
+            )
+
+        await client.connect()
+        return client
 
     @typing.overload
     @staticmethod
