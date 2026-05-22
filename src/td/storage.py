@@ -163,7 +163,7 @@ class Storage(BaseObject):
             self.fullSize = 0
 
         def writeData(self, data: QByteArray):
-            Expects(self.stream.device() != None, "stream.device is missing")
+            Expects(self.stream.device() is not None, "stream.device is missing")
 
             self.stream << data
             len = 0xFFFFFFFF if data.isNull() else data.size()
@@ -579,7 +579,7 @@ class Storage(BaseObject):
     @staticmethod
     def GetAbsolutePath(path: str = None) -> str:
 
-        if path == None or path == "":
+        if path is None or path == "":
             path = os.getcwd()
 
         path = os.path.abspath(path)

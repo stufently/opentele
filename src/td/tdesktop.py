@@ -125,8 +125,8 @@ class TDesktop(BaseObject):
         """
         self.__accounts: typing.List[td.Account] = []
         self.__basePath = basePath
-        self.__keyFile = keyFile if (keyFile != None) else TDesktop.kDefaultKeyFile
-        self.__passcode = passcode if (passcode != None) else str("")
+        self.__keyFile = keyFile if (keyFile is not None) else TDesktop.kDefaultKeyFile
+        self.__passcode = passcode if (passcode is not None) else str("")
         self.__passcodeBytes = self.__passcode.encode("utf-8")
         self.__mainAccount: Optional[td.Account] = None
         self.__active_index = -1
@@ -136,7 +136,7 @@ class TDesktop(BaseObject):
         self.__isLoaded = False
         self.__api = api.copy()
 
-        if basePath != None:
+        if basePath is not None:
             self.__basePath = td.Storage.GetAbsolutePath(basePath)
             self.LoadTData()
 
@@ -187,15 +187,15 @@ class TDesktop(BaseObject):
         ```
         """
 
-        if basePath == None:
+        if basePath is None:
             basePath = self.basePath
 
-        Expects(basePath != None and basePath != "", "No folder provided to load tdata")
+        Expects(basePath is not None and basePath != "", "No folder provided to load tdata")
 
-        if keyFile != None and self.__keyFile != keyFile:
+        if keyFile is not None and self.__keyFile != keyFile:
             self.__keyFile = keyFile
 
-        if passcode != None and self.__passcode != passcode:
+        if passcode is not None and self.__passcode != passcode:
             self.__passcode = passcode
             self.__passcodeBytes = passcode.encode("utf-8")
 
@@ -251,16 +251,16 @@ class TDesktop(BaseObject):
             tdesk.SaveTData("new_tdata")
         ```
         """
-        if basePath == None:
+        if basePath is None:
             basePath = self.basePath
 
         self.__keyFile = (
-            keyFile if (keyFile != None and self.keyFile != keyFile) else self.keyFile
+            keyFile if (keyFile is not None and self.keyFile != keyFile) else self.keyFile
         )
 
-        Expects(basePath != None and basePath != "", "No folder provided to save tdata")
+        Expects(basePath is not None and basePath != "", "No folder provided to save tdata")
 
-        if passcode != None and self.__passcode != passcode:
+        if passcode is not None and self.__passcode != passcode:
             self.__passcode = passcode
             self.__passcodeBytes = passcode.encode("utf-8")
             self.__isLoaded = False  # to generate new localKey
@@ -285,7 +285,7 @@ class TDesktop(BaseObject):
         # Intended for internal usage only
 
         Expects(len(self.accounts) > 0)
-        Expects(basePath != None and basePath != "", "No folder provided to save tdata")
+        Expects(basePath is not None and basePath != "", "No folder provided to save tdata")
 
         for account in self.accounts:
             account._writeData(basePath, keyFile)
@@ -390,14 +390,14 @@ class TDesktop(BaseObject):
 
         self.__accounts.append(account)
 
-        if self.mainAccount == None:
+        if self.mainAccount is None:
             self.__mainAccount = self.__accounts[0]
 
     def __loadFromTData(self) -> None:
         # Intended for internal usage only
 
         Expects(
-            self.basePath != None and self.basePath != "",
+            self.basePath is not None and self.basePath != "",
             "No folder provided to load tdata",
         )
 

@@ -161,7 +161,7 @@ class APIData(object, metaclass=BaseAPIMetaClass):
     ) -> None:
 
         Expects(
-            (self.__class__ != APIData) or (api_id != None and api_hash != None),
+            (self.__class__ != APIData) or (api_id is not None and api_hash is not None),
             NoInstanceMatched("No instace of API matches the arguments"),
         )
 
@@ -178,7 +178,7 @@ class APIData(object, metaclass=BaseAPIMetaClass):
         self.lang_pack = lang_pack if lang_pack else cls.lang_pack
         self.lang_code = lang_code if lang_code else cls.lang_code
 
-        if self.device_model == None:
+        if self.device_model is None:
             system = platform.uname()
 
             if system.machine in ("x86_64", "AMD64"):
@@ -216,7 +216,7 @@ class APIData(object, metaclass=BaseAPIMetaClass):
             return
 
         # might cause conflict, disabled for now, it won"t be a problem
-        # if (API.findData(self.pid) != None):
+        # if (API.findData(self.pid) is not None):
         #     API.CustomInitConnectionList.remove(self)
 
     def __eq__(self, __o: APIData) -> bool:
@@ -231,7 +231,7 @@ class APIData(object, metaclass=BaseAPIMetaClass):
     def _makePIDEnsure(cls) -> int:
         while True:
             pid = int.from_bytes(os.urandom(8), "little")
-            if cls.findData(pid) == None:
+            if cls.findData(pid) is None:
                 break
         return pid
 
@@ -458,7 +458,7 @@ class API(BaseObject):
         def Generate(cls: Type[_T], system: str = None, unique_id: str = None) -> _T:
 
             validList = ["windows", "macos", "linux"]
-            if system == None or system not in validList:
+            if system is None or system not in validList:
                 system = SystemInfo._hashtovalue(
                     SystemInfo._strtohashid(unique_id), validList
                 )

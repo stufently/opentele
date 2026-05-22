@@ -671,7 +671,7 @@ class StorageAccount(BaseObject):  # nocov
     def readMtpConfig(self) -> td.MTP.Config:
         # Intended for internal usage only
         Expects(
-            self.localKey != None,
+            self.localKey is not None,
             AccountAuthKeyNotFound("The localKey has not been initialized yet"),
         )
 
@@ -704,10 +704,10 @@ class StorageAccount(BaseObject):  # nocov
         # Intended for internal usage only
 
         Expects(
-            self.localKey != None,
+            self.localKey is not None,
             "localKey not found, have you initialized me correctly?",
         )
-        Expects(basePath != None and basePath != "", "basePath can't be empty")
+        Expects(basePath is not None and basePath != "", "basePath can't be empty")
 
         serialized = self.owner.MtpConfig.Serialize()
         size = td.Serialize.bytearraySize(serialized)
@@ -721,10 +721,10 @@ class StorageAccount(BaseObject):  # nocov
         # Intended for internal usage only
 
         Expects(
-            self.localKey != None,
+            self.localKey is not None,
             "localKey not found, have you initialized me correctly?",
         )
-        Expects(basePath != None and basePath != "", "basePath can't be empty")
+        Expects(basePath is not None and basePath != "", "basePath can't be empty")
 
         map = td.Storage.FileWriteDescriptor("map", basePath)
 
@@ -740,11 +740,11 @@ class StorageAccount(BaseObject):  # nocov
         # Intended for internal usage only
 
         Expects(
-            self.localKey != None,
+            self.localKey is not None,
             "localKey not found, have you initialized me correctly?",
         )
         Expects(
-            baseGlobalPath != None and baseGlobalPath != "",
+            baseGlobalPath is not None and baseGlobalPath != "",
             "baseGlobalPath can't be empty",
         )
 
@@ -763,11 +763,11 @@ class StorageAccount(BaseObject):  # nocov
         # Intended for internal usage only
 
         Expects(
-            baseGlobalPath != None and baseGlobalPath != "",
+            baseGlobalPath is not None and baseGlobalPath != "",
             "baseGlobalPath can't be empty",
         )
 
-        if keyFile != None and self.keyFile != keyFile:
+        if keyFile is not None and self.keyFile != keyFile:
             self.__keyFile = keyFile
             dataNameKey = td.Storage.ComputeDataNameKey(self.__keyFile)
         else:
@@ -864,7 +864,7 @@ class Account(BaseObject):
         self.__MainDcId = DcId(0)
 
         self.__basePath = td.Storage.GetAbsolutePath(basePath)
-        self.__keyFile = keyFile if (keyFile != None) else td.TDesktop.kDefaultKeyFile
+        self.__keyFile = keyFile if (keyFile is not None) else td.TDesktop.kDefaultKeyFile
 
         self.__mtpKeys: typing.List[td.AuthKey] = []
         self.__mtpKeysToDestroy: typing.List[td.AuthKey] = []
@@ -1000,7 +1000,7 @@ class Account(BaseObject):
                 break
 
         Expects(
-            self.authKey != None,
+            self.authKey is not None,
             exception=TDataAuthKeyNotFound(
                 "Could not find the main authKey, are you sure the data is correct?"
             ),
@@ -1067,7 +1067,7 @@ class Account(BaseObject):
                 break
 
         Expects(
-            self.__authKey != None,
+            self.__authKey is not None,
             exception=TDataAuthKeyNotFound(
                 "Could not find authKey, the data might has been corrupted"
             ),
@@ -1140,12 +1140,12 @@ class Account(BaseObject):
         ```
         """
 
-        if basePath == None:
+        if basePath is None:
             basePath = self.basePath
 
         basePath = td.Storage.GetAbsolutePath(basePath)
 
-        if self.basePath == None:
+        if self.basePath is None:
             self.__basePath = basePath
 
         self.owner.SaveTData(basePath, passcode, keyFile)
@@ -1256,14 +1256,14 @@ class Account(BaseObject):
         userId = copy.UserId
         authKey = td.AuthKey(authKey, td.AuthKeyType.ReadFromFile, dcId)
         
-        if userId == None:
+        if userId is None:
             await copy.connect()
             await copy.get_me()
             userId = copy.UserId
             
         newAccount = None
 
-        if owner != None:
+        if owner is not None:
 
             Expects(
                 owner.accountsCount < td.TDesktop.kMaxAccounts,

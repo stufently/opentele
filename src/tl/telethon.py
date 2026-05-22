@@ -40,7 +40,7 @@ class CustomInitConnectionRequest(functions.InitConnectionRequest):
 
         # our hook pass pid as device_model
         data = APIData.findData(device_model)  # type: ignore
-        if data != None:
+        if data is not None:
             self.api_id = data.api_id
             self.device_model = data.device_model if data.device_model else device_model
             self.system_version = (
@@ -316,7 +316,7 @@ class TelegramClient(telethon.TelegramClient, BaseObject):
     ):
         # Use API.TelegramDesktop by default.
 
-        if api != None:
+        if api is not None:
             if isinstance(api, APIData) or (
                 isinstance(api, type)
                 and APIData.__subclasscheck__(api)
@@ -338,7 +338,7 @@ class TelegramClient(telethon.TelegramClient, BaseObject):
                     api_hash = api_id
                 api = None
 
-        elif api_id == 0 and api_hash == None:
+        elif api_id == 0 and api_hash is None:
             api = API.TelegramDesktop
             api_id = api.api_id
             api_hash = api.api_hash
@@ -378,7 +378,7 @@ class TelegramClient(telethon.TelegramClient, BaseObject):
 
         return (
             next((auth for auth in results.authorizations if auth.current), None)
-            if results != None
+            if results is not None
             else None
         )
 
@@ -411,7 +411,7 @@ class TelegramClient(telethon.TelegramClient, BaseObject):
         Terminate all other sessions.
         """
         sessions = await self.GetSessions()
-        if sessions == None:
+        if sessions is None:
             return False
 
         for ss in sessions.authorizations:
@@ -451,7 +451,7 @@ class TelegramClient(telethon.TelegramClient, BaseObject):
         ```
 
         """
-        if (sessions == None) or not isinstance(sessions, types.account.Authorizations):
+        if (sessions is None) or not isinstance(sessions, types.account.Authorizations):
             sessions = await self.GetSessions()
 
         assert sessions
@@ -481,7 +481,7 @@ class TelegramClient(telethon.TelegramClient, BaseObject):
         """
         auth = await self.GetCurrentSession()
 
-        return False if auth == None else bool(auth.official_app)
+        return False if auth is None else bool(auth.official_app)
 
     @typing.overload
     async def QRLoginToNewClient(
@@ -573,7 +573,7 @@ class TelegramClient(telethon.TelegramClient, BaseObject):
         if await newClient.is_user_authorized():  # nocov
 
             currentAuth = await newClient.GetCurrentSession()
-            if currentAuth != None:
+            if currentAuth is not None:
 
                 if currentAuth.api_id == api.api_id:
                     warnings.warn(
@@ -673,7 +673,7 @@ class TelegramClient(telethon.TelegramClient, BaseObject):
                 # requires an 2fa password
 
                 Expects(
-                    password != None,
+                    password is not None,
                     NoPasswordProvided(
                         "Two-step verification is enabled for this account.\n"
                         "You need to provide the `password` to argument"

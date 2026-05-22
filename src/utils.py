@@ -160,7 +160,7 @@ class extend_class(object):  # nocov
             # let's backup this attribute for future uses
             result = extend_class.getattr(base, attributeName)
 
-            if result != None:
+            if result is not None:
                 # ! dirty code, gonna fix it later, it's okay for now
                 setattr(
                     base,
