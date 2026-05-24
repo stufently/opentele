@@ -823,7 +823,7 @@ class TelegramClient(telethon.TelegramClient, BaseObject):
             )
         else:
             session_file = cfg.get("session_file") or json_path.stem
-            session_path = json_path.parent / (_Path(session_file).stem + ".session")
+            session_path = json_path.parent / (Path(session_file).stem + ".session")
             if not session_path.exists():
                 raise FileNotFoundError(
                     f"Bundle .session file not found: {session_path}"
@@ -834,6 +834,9 @@ class TelegramClient(telethon.TelegramClient, BaseObject):
             )
 
         await client.connect()
+        if not await client.is_user_authorized():
+            await client.disconnect()
+            raise TelethonUnauthorized("Bundle session is not authorized or has been revoked")
         return client
 
     @typing.overload
