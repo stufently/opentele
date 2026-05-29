@@ -12,7 +12,7 @@ license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [
-    { name = "stufently (fork of thedemons)", email = "vitya5503@gmail.com" },
+    { name = "stufently (fork of thedemons)", email = "stufently@gmail.com" },
 ]
 keywords = [
     "tdata",
