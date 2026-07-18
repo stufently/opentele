@@ -3,11 +3,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-07-18
+
 ### CI
 
-- **Releases are now automatic on version bump.** New `autotag.yml`: a push to `main` that changes `pyproject.toml` checks PyPI for `project.version`; if absent, it ensures tag `v<version>` exists and dispatches `publish.yml` **and** `docker.yml` on that tag (tags created with `GITHUB_TOKEN` don't fire workflows themselves, hence the explicit dispatch; both workflows gained a `workflow_dispatch` trigger). The PyPI check makes it an idempotent recovery path too — partial failures are retried via manual `workflow_dispatch` of `autotag.yml`. `publish.yml` now refuses to run on non-tag refs (a branch named `v1.2.3` can't reach PyPI). `autotag.yml` pins `actions/checkout` by SHA and drops persisted credentials. Manual tag push keeps working as before. Context: 1.3.1 sat unreleased on `main` for ~2 months because nobody pushed the tag.
-
-## [1.3.1] - 2026-05-22
+- **Releases are now automatic on version bump.** New `autotag.yml`: a push to `main` that changes `pyproject.toml` checks PyPI for `project.version`; if absent, it ensures tag `v<version>` exists and dispatches `publish.yml` **and** `docker.yml` on that tag (tags created with `GITHUB_TOKEN` don't fire workflows themselves, hence the explicit dispatch; both workflows gained a `workflow_dispatch` trigger). The PyPI check makes it an idempotent recovery path too — partial failures are retried via manual `workflow_dispatch` of `autotag.yml`. `publish.yml` now refuses to run on non-tag refs (a branch named `v1.2.3` can't reach PyPI). `autotag.yml` pins `actions/checkout` by SHA and drops persisted credentials. Manual tag push keeps working as before. Context: the code below sat on `main` since 2026-05-22 because nobody pushed the tag — this release shipped the day the automation landed.
 
 ### Added
 - **`TelegramClient.FromBundle(json_path, proxy, **kwargs)`** — новый статический метод для создания авторизованного `TelegramClient` из JSON-бандла (формат: `app_id` + `app_hash` + рядом лежащий `.session`-файл или встроенная `string_session`). Поддерживает все распространённые имена ключей строковой сессии: `string_session`, `session_string`, `telethon_string`, `telethon_session`. Возвращает подключённый клиент — вызывающий код отвечает за `disconnect()`.
