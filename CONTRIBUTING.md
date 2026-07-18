@@ -47,7 +47,7 @@ docker run --rm -v "$PWD:/work" -w /work python:3.13-slim bash -c \
 - Subject ≤ 50 chars, imperative mood, lowercase verb.
 - No `Co-Authored-By` trailers.
 - No `--amend` of pushed commits.
-- For releases: a separate `release X.Y.Z: <one-line summary>` commit on `main` is followed by a tag `vX.Y.Z(-suffix)?` and a GitHub Release.
+- For releases: bump `project.version` in `pyproject.toml` on `main` — `autotag.yml` then creates the `vX.Y.Z` tag automatically and dispatches `publish.yml` (test → build → PyPI). Pushing a `vX.Y.Z(-suffix)?` tag manually still works and is the fallback if the auto-dispatch fails.
 
 ## Code of Conduct
 

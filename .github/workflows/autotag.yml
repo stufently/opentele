@@ -1,0 +1,100 @@
+name: Auto-tag on version bump
+
+# Automates the release trigger: push to main that changes pyproject.toml →
+# if project.version is not on PyPI yet, ensure tag v<version> exists and
+# dispatch publish.yml + docker.yml on that tag.
+#
+# Why the dispatch hop: refs created with the workflow's GITHUB_TOKEN do not
+# fire other workflows (GitHub anti-recursion), so the tag push alone would
+# never start publish.yml/docker.yml. workflow_dispatch is exempt.
+#
+# Idempotent recovery: the gate is "is this version on PyPI?", not "does the
+# tag exist?" — so a partial failure (tag created, dispatch failed; or publish
+# run failed) is retried by re-running this workflow (manual workflow_dispatch
+# trigger below) or by any later pyproject.toml push. Once the version is on
+# PyPI the workflow is a quiet no-op. GHCR (docker.yml) is dispatched
+# alongside publish and recovers the same way via manual re-run.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - pyproject.toml
+  # Manual bootstrap/recovery: re-runs the same idempotent logic.
+  workflow_dispatch:
+
+permissions:
+  contents: write # create the version tag
+  actions: write # dispatch publish.yml / docker.yml
+
+concurrency:
+  group: autotag
+  cancel-in-progress: false
+
+jobs:
+  tag-and-publish:
+    name: Tag v<version> and dispatch release
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - name: Read version from pyproject
+        id: version
+        run: |
+          VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([.a-zA-Z0-9-]+)?$'; then
+            echo "ERROR: version '$VERSION' does not look like X.Y.Z(+suffix)" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Check PyPI for this version
+        id: pypi
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          STATUS=$(curl -sS -o /dev/null -w '%{http_code}' "https://pypi.org/pypi/opentele-ng/${VERSION}/json")
+          case "$STATUS" in
+            200) echo "version $VERSION already on PyPI — nothing to do"
+                 echo "published=true" >> "$GITHUB_OUTPUT" ;;
+            404) echo "version $VERSION not on PyPI yet"
+                 echo "published=false" >> "$GITHUB_OUTPUT" ;;
+            *)   echo "ERROR: PyPI returned HTTP $STATUS — refusing to guess" >&2
+                 exit 1 ;;
+          esac
+
+      - name: Ensure tag exists
+        if: steps.pypi.outputs.published == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set +e
+          git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null
+          RC=$?
+          set -e
+          case "$RC" in
+            0) EXISTING=$(git ls-remote --tags origin "refs/tags/$TAG" | cut -f1)
+               echo "tag $TAG already exists at $EXISTING (current push: $GITHUB_SHA)"
+               if [ "$EXISTING" != "$GITHUB_SHA" ]; then
+                 echo "NOTE: release will build from the tag's commit, not this push" >&2
+               fi ;;
+            2) gh api "repos/$GITHUB_REPOSITORY/git/refs" \
+                 -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA"
+               echo "created $TAG at $GITHUB_SHA" ;;
+            *) echo "ERROR: git ls-remote failed (rc=$RC, network?)" >&2
+               exit 1 ;;
+          esac
+
+      - name: Dispatch publish + docker on the tag
+        if: steps.pypi.outputs.published == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          gh workflow run publish.yml --ref "$TAG"
+          gh workflow run docker.yml --ref "$TAG"
