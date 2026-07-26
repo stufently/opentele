@@ -3,6 +3,25 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### CI / Supply chain
+
+- **Third-party actions are now pinned by commit SHA.** `publish.yml` referenced
+  `pypa/gh-action-pypi-publish@release/v1` — a *floating upstream branch* that
+  would receive this repo's PyPI OIDC upload token on every run; `docker.yml`
+  referenced mutable `docker/*@vN` tags while holding a GHCR push token. Both are
+  now SHA-pinned to exactly what those refs resolved to on 2026-07-25, so
+  behaviour is unchanged:
+  `pypa/gh-action-pypi-publish@ba38be9e` (= release `v1.14.1`),
+  `docker/setup-qemu-action@c7c53464` (v3.7.0),
+  `docker/setup-buildx-action@8d2750c6` (v3.12.0),
+  `docker/login-action@c94ce9fb` (v3.7.0),
+  `docker/metadata-action@c299e40c` (v5.10.0),
+  `docker/build-push-action@10e90e36` (v6.19.2).
+  First-party `actions/*` are left on `vN` (same trust domain as the runner).
+  Dependabot's `github-actions` ecosystem is already enabled here, so it will
+  keep the SHAs (and the `# vX.Y.Z` comments) updated via PRs.
+  No version bump: this is not a release.
+
 ## [1.3.1] - 2026-07-18
 
 ### CI
