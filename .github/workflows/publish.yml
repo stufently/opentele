@@ -48,7 +48,8 @@ jobs:
           pip install -e ".[test]"
 
       - name: Run full test suite
-        run: pytest --tb=short --ignore=tests/tdata_test.py --cov=opentele --cov-fail-under=80 tests/
+        # Gate matches ci.yml — see the comment there for why it is 78 and not 80.
+        run: pytest --tb=short --ignore=tests/tdata_test.py --cov=opentele --cov-fail-under=78 tests/
 
   build:
     name: Build sdist + wheel

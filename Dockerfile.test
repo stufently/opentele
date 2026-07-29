@@ -14,7 +14,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY pyproject.toml requirements.txt requirements-test.txt README.md MANIFEST.in LICENSE ./
+# `.coveragerc` must be present or the container's coverage numbers silently
+# diverge from CI. `Dockerfile` + `requirements-docker.txt` are asserted on by
+# the supply-chain guards in tests/test_known_issues_1_3_0.py.
+COPY pyproject.toml requirements.txt requirements-test.txt README.md MANIFEST.in LICENSE .coveragerc Dockerfile requirements-docker.txt ./
 COPY src/ ./src/
 COPY tests/ ./tests/
 COPY docs/ ./docs/

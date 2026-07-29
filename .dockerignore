@@ -15,13 +15,21 @@ build/
 dist/
 opentele_ng.egg-info/
 
-# Tests + benchmarks live in CI, not in the production image.
-tests/
+# NB: `tests/` is deliberately NOT excluded — `Dockerfile.test` copies it, and
+# a build context is shared by every Dockerfile in the directory. Excluding it
+# here broke `docker build -f Dockerfile.test .` (the flow CONTRIBUTING.md
+# documents) from 1.2.0 until 1.3.2. The production `Dockerfile` never COPYs
+# tests/, so the shipped image is unaffected either way.
 docs/build/
 docs/documentation/
 
-# Local-only artifacts
-opentele             # symlink created by `pip install -e .`
-claude/              # private session notes
+# Local-only artifacts.
+# NB: .dockerignore has NO trailing-comment support — only whole lines starting
+# with `#` are comments. Patterns below must stay bare.
+# `opentele` = symlink created by `pip install -e .`
+opentele
+# `claude/` = private session notes
+claude/
 node_modules/
-site/                # mkdocs output
+# `site/` = mkdocs output
+site/

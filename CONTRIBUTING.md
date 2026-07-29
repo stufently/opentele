@@ -10,14 +10,21 @@ The project is tested entirely in Docker — please don't `pip install` into you
 git clone https://github.com/stufently/opentele
 cd opentele
 
-# Build + run the full test suite (Python 3.13 by default)
+# Build + run the full test suite (Python 3.14 — same base as the shipped image)
 docker build -f Dockerfile.test -t opentele-test .
-docker run --rm opentele-test pytest --tb=short
+docker run --rm opentele-test pytest --tb=short --ignore=tests/tdata_test.py
+
+# With the coverage gate CI enforces
+docker run --rm opentele-test pytest --tb=short --ignore=tests/tdata_test.py \
+    --cov=opentele --cov-report=term-missing --cov-fail-under=78 tests/
 
 # Lint
-docker run --rm -v "$PWD:/work" -w /work python:3.13-slim bash -c \
+docker run --rm -v "$PWD:/work" -w /work python:3.14-slim bash -c \
     "pip install -q ruff && ruff check ."
 ```
+
+`tests/tdata_test.py` is a live integration test that needs real Telegram
+credentials — CI skips it and so should you.
 
 ## What kind of changes are welcome
 
@@ -34,7 +41,11 @@ docker run --rm -v "$PWD:/work" -w /work python:3.13-slim bash -c \
 - **No Qt at runtime.** `src/td/qdatastream.py` is a byte-identical pure-Python replacement; cross-comparison tests in `tests/qdatastream/test_pure_vs_pyqt_equivalence.py` use PyQt6 only as a test-time oracle.
 - **TDD.** New features arrive as a failing test → implementation → green. Wire-format changes specifically should fail a golden-byte test before they pass.
 - **3-AI parallel review** (Codex / Cursor / Gemini) is applied to every PR that touches `src/td/` or `src/utils.py`. Catches from review get applied before merge.
-- **Coverage gate** is 90% on `opentele.td`. Don't lower it without explanation.
+- **Coverage gate** is 78% over the whole `opentele` package (`.coveragerc` +
+  `--cov-fail-under` in `ci.yml`/`publish.yml`). Don't lower it without
+  explanation, and don't widen `exclude_lines` in `.coveragerc` to make a
+  number go up — a gate that skips error paths in a parser fed untrusted
+  tdata is worse than no gate. See the comment in `.coveragerc`.
 
 ## Filing issues
 
@@ -47,7 +58,14 @@ docker run --rm -v "$PWD:/work" -w /work python:3.13-slim bash -c \
 - Subject ≤ 50 chars, imperative mood, lowercase verb.
 - No `Co-Authored-By` trailers.
 - No `--amend` of pushed commits.
-- For releases: bump `project.version` in `pyproject.toml` on `main` — `autotag.yml` then creates the `vX.Y.Z` tag automatically and dispatches `publish.yml` (test → build → PyPI). Pushing a `vX.Y.Z(-suffix)?` tag manually still works and is the fallback if the auto-dispatch fails.
+- For releases: bump `project.version` in `pyproject.toml` on `main` — `autotag.yml` then creates the `vX.Y.Z` tag automatically and dispatches `publish.yml` (test → build → PyPI) **and** `docker.yml` (GHCR). Pushing a `vX.Y.Z(-suffix)?` tag manually still works and is the fallback if the auto-dispatch fails.
+- **Land the changes and the version bump as two separate commits.** The bump
+  is the release trigger, and the release path does not wait for the 15-lane
+  CI matrix: `publish.yml` re-runs the suite on Ubuntu / Python 3.13 only, and
+  `docker.yml` runs no tests at all. Bumping in the same commit as the code
+  means PyPI and GHCR can publish before macOS / Windows / Python 3.10-3.12
+  have reported. So: push the change, wait for `CI` to go green on `main`,
+  then push a one-line commit that bumps the version.
 
 ## Code of Conduct
 

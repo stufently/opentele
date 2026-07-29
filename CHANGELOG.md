@@ -3,6 +3,111 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-07-29 — positional `api_hash` fix, honest coverage gate, working Docker test flow
+
+### Fixed
+
+- **`TelegramClient(session, api_id, api_hash)` silently set `api_hash` to the
+  `api_id`.** Our `__init__` inserts an extra `api` parameter in slot 2, so the
+  plain Telethon-style positional call arrives as
+  `api=<api_id>, api_id=<api_hash>, api_hash=None` and has to be un-shifted.
+  Upstream opentele did that with `api_id = api` followed by
+  `api_hash = api_id` — the second line reads the name the first line just
+  overwrote. Result: `client.api_hash == client.api_id`. Construction succeeds
+  and `initConnection` does not carry `api_hash`, so an already-authorized
+  session behaves normally; only login RPCs (`send_code_request` / `sign_in` /
+  `start`) fail, with `ApiIdInvalidError`. This is the form the library's own
+  docstrings advertise (`Account.FromTelethon`), so it is the documented calling
+  convention. Now a single swap statement.
+- **`TelegramClient(session, api_id, api_hash="...")` raised "Your API ID or
+  Hash cannot be empty or None".** Telethon makes everything after `api_hash`
+  keyword-only, so that mix is a valid Telethon call, but the un-shift branch
+  required a truthy `api_id` — which is `0` here — and fell through with no
+  credentials at all. Handled explicitly now.
+- **`TelegramClient(session, <int>, x, y)` silently dropped `y`.** Telethon has
+  no fourth positional parameter, so this only happens when the caller assumes
+  slot 2 is `api_id`; no reading of it keeps all three values. It now raises
+  `TypeError` naming both supported forms instead of quietly building a client
+  with the wrong credentials.
+- **`TelegramClient.FromBundle` hit the first bug** — it passed
+  `api_id, api_hash` positionally into the `api, api_id` slots. Now keyword
+  args on both branches (string session and `.session` file).
+
+  All four are pinned by `tests/test_telethon_client_init.py` (15 tests:
+  positional == keyword, `api_hash` is never the id, the mixed and ambiguous
+  forms, `api=APIData` and default paths unchanged, plus both `FromBundle`
+  session flavours with the network stubbed out).
+- **`docker build -f Dockerfile.test .` had been broken since 1.2.0** — the
+  `.dockerignore` added in that release excluded `tests/`, and a build context
+  is shared by every Dockerfile in the directory, so the `COPY tests/` line
+  could never resolve. That is the exact command `CONTRIBUTING.md` tells
+  contributors to run. `tests/` is no longer excluded (the production
+  `Dockerfile` never copies it, so the shipped image is unchanged).
+- **Three `.dockerignore` patterns were inert** — `opentele`, `claude/` and
+  `site/` carried trailing `# ...` comments. `.dockerignore` only honours
+  whole-line comments, so those were parsed as literal patterns and matched
+  nothing; private `claude/` session notes were being uploaded into every build
+  context. Comments moved onto their own lines.
+- **`Dockerfile.test` now copies `.coveragerc`, `Dockerfile` and
+  `requirements-docker.txt`.** Without `.coveragerc` the container's coverage
+  numbers silently diverged from CI, and the two supply-chain guards in
+  `tests/test_known_issues_1_3_0.py` failed because the files they assert on
+  were not in the image. A local `docker run --rm opentele-test pytest` now
+  reproduces CI exactly.
+
+### Changed
+
+- **The coverage gate now measures the whole package.** `.coveragerc` excluded
+  bare `pass`, `raise`, `except` and `nocov`, which dropped every error path
+  plus whole classes (`MapData`, `MTP`, `extend_class`, the `configs` id types)
+  out of the denominator: `td/account.py` reported **142** statements instead
+  of 659, `td/mtp.py` **3** instead of 259, and the advertised "82.58%" was
+  computed over 1745 of ~3160 statements — roughly 55% of the code, with the
+  untested half being the error handling of a parser fed untrusted tdata.
+  `exclude_lines` is now `pragma: no cover` plus structurally unreachable
+  lines, and `--cov-fail-under` moves `80 → 78` in `ci.yml` / `publish.yml`.
+  The number reads lower but covers nearly twice the code; measured total is
+  81.3%, with `td/account.py` 88%, `td/mtp.py` 87%, `td/qdatastream.py` 89%,
+  `td/storage.py` 91%. Verified identical on Linux / Python 3.10, 3.12, 3.13
+  and 3.14, so the 3-point margin is not version-dependent.
+- **`requirements-docker.txt` regenerated** — `telethon 1.43.2 → 1.44.0`,
+  `pyasn1 0.6.3 → 0.6.4`. The GHCR image was shipping a Telethon that CI never
+  tested against (CI resolves the latest allowed by `telethon>=1.36,<2`).
+- **Dead `[tool.ruff]` table removed from `pyproject.toml`.** A `.ruff.toml`
+  next to `pyproject.toml` wins outright, so that table never applied — and it
+  disagreed with `.ruff.toml` (line-length 100 vs 120, a much shorter ignore
+  list), which is a trap for anyone tuning lint rules. A pointer comment
+  replaces it.
+- **`CONTRIBUTING.md` now says to land changes and the version bump as two
+  commits.** The bump is the release trigger and the release path does not wait
+  for the CI matrix — `publish.yml` re-tests on Ubuntu / Python 3.13 only and
+  `docker.yml` runs no tests — so a combined commit can publish to PyPI and
+  GHCR before macOS / Windows / Python 3.10-3.12 have reported. (Caught by
+  Codex review; 1.3.2 itself was released this way.)
+
+### Upstream fork sweep (closes #5, #6)
+
+Reviewed every commit flagged by the monthly `forks-watch` reports. **Nothing
+adopted** — all of it is already implemented here, or is a downgrade:
+
+- `Pavel-qr/opentele@e9ad22c` "fix for python 3.13" — adds
+  `__firstlineno__` / `__static_attributes__` to `extend_class`'s `crossDelete`.
+  Already in `src/utils.py` since 1.0.x, with the PEP 749 rationale in a
+  comment.
+- `Pavel-qr/opentele@b9dda77` "fix some bugs, add actual devices" — mostly
+  PyCharm re-indentation. The substance: `app_version` strings bumped to
+  Telegram 5.10 / 10.1.1 / 9.3.2 (ours are already 6.8.2 / 12.6.0 / 12.7),
+  device lists *narrowed* to one macOS model on macOS 13.4.1 and Android
+  capped at SDK 33 (ours: iPhone 17 / iOS 26, macOS 26, SDK 37), and
+  `kMaxAccounts = 150` (Telegram Desktop's real cap is 6, which is what we
+  use). Also changes `PrintSessions` to *return* the table instead of printing
+  it — a silent break of a documented public method — and adds IP / country /
+  region columns.
+- `Ehekatech/opentele-tg@b66909d` — `await newClient._on_login(...)`. We
+  already detect `Awaitable` at runtime, so both sync and async Telethon
+  builds work; the fork's version breaks on the sync path. Its other commits
+  delete repo scaffolding (`.gitignore`, `.coveragerc`, `.readthedocs.yml`).
+
 ### CI / Supply chain
 
 - **Third-party actions are now pinned by commit SHA.** `publish.yml` referenced
@@ -20,7 +125,7 @@ All notable changes to this project will be documented in this file.
   First-party `actions/*` are left on `vN` (same trust domain as the runner).
   Dependabot's `github-actions` ecosystem is already enabled here, so it will
   keep the SHAs (and the `# vX.Y.Z` comments) updated via PRs.
-  No version bump: this is not a release.
+  (Landed on `main` on 2026-07-25 without a version bump; ships in 1.3.2.)
 
 ## [1.3.1] - 2026-07-18
 

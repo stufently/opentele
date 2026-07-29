@@ -129,10 +129,17 @@ asyncio.run(main())
 
 ## Status
 
-- Latest: **`v1.3.1`** (2026-07-18). PyPI: [`opentele-ng`](https://pypi.org/project/opentele-ng/) / Docker: [`ghcr.io/stufently/opentele-ng`](https://ghcr.io/stufently/opentele-ng) (Python 3.14). Production-ready. 1.3.1 adds `TelegramClient.FromBundle` (authorized client from a JSON bundle + session file) and fully automatic releases (version bump on `main` → tag → PyPI + GHCR via `autotag.yml`). 1.3.0 closed 5 architectural known-issues from 1.2.2: **`kPerformanceMode` default flipped to `False`** so new tdata is actually encrypted (was using a hard-coded `localKey`), UTF-8 passcodes now work (was ASCII-only → crash), unknown `lskType` keys fail closed (was desyncing the stream), `StorageAccount` always reads/writes MTP config (was data-loss class in perf mode), and the Docker image now installs from a hash-locked deps file for reproducible builds.
-- 295 tests pass on Python 3.10 / 3.11 / 3.12 / 3.13 / 3.14 (Docker matrix +
-  GitHub Actions matrix × Ubuntu / macOS / Windows).
-- Coverage: **~84% on the whole `opentele` package** (CI gate 80% on full package, was 90% on `opentele.td` only — that subset is still 94.83%).
+- Latest: **`v1.3.1`** (2026-07-18). PyPI: [`opentele-ng`](https://pypi.org/project/opentele-ng/) / Docker: [`ghcr.io/stufently/opentele-ng`](https://ghcr.io/stufently/opentele-ng) (Python 3.14). Production-ready. 1.3.1 added `TelegramClient.FromBundle` (authorized client from a JSON bundle + session file) and fully automatic releases (version bump on `main` → tag → PyPI + GHCR via `autotag.yml`). 1.3.0 closed 5 architectural known-issues from 1.2.2: **`kPerformanceMode` default flipped to `False`** so new tdata is actually encrypted (was using a hard-coded `localKey`), UTF-8 passcodes now work (was ASCII-only → crash), unknown `lskType` keys fail closed (was desyncing the stream), `StorageAccount` always reads/writes MTP config (was data-loss class in perf mode), and the Docker image now installs from a hash-locked deps file for reproducible builds.
+- 305 tests on Python 3.10 / 3.11 / 3.12 / 3.13 / 3.14 (Docker matrix + GitHub
+  Actions matrix × Ubuntu / macOS / Windows). 302 run and pass everywhere; 3
+  are opt-in and skip unless `OPENTELE_REAL_TDATA_PATH` points at a real tdata
+  folder, and one more is version-gated to Python 3.13+.
+- Coverage: **81.3% of the whole `opentele` package**, CI gate 78%. Since 1.3.2
+  that is measured over all ~3165 statements — the pre-1.3.2 "84%" was computed
+  over 1745, because `.coveragerc` excluded every `raise` / `except` / `pass`
+  line and whole classes marked `nocov`. Core wire-format modules:
+  `td/storage.py` 91%, `td/qdatastream.py` 89%, `td/account.py` 88%,
+  `td/mtp.py` 87%.
 - See [CHANGELOG.md](CHANGELOG.md) for the full per-release breakdown.
 
 ## Security

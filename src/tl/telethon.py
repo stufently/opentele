@@ -331,13 +331,41 @@ class TelegramClient(telethon.TelegramClient, BaseObject):
                 kwargs["device_model"] = api.pid  # type: ignore
 
             else:
-                if (
-                    (isinstance(api, int) or isinstance(api, str))
-                    and api_id
-                    and isinstance(api_id, str)
-                ):
-                    api_id = api
-                    api_hash = api_id
+                # `api` is not an APIData, so the caller used Telethon's own
+                # signature, where slot 2 is `api_id`. Un-shift the credentials.
+                #
+                # Telethon makes everything after `api_hash` keyword-only, so
+                # the only two shapes that can legitimately land here are the
+                # three-positional call and the id-positional/hash-keyword mix.
+                if isinstance(api, (int, str)):
+                    if api_id and isinstance(api_id, str) and api_hash is None:
+                        # TelegramClient(session, api_id, api_hash)
+                        #
+                        # Swap in ONE statement — upstream did `api_id = api`
+                        # followed by `api_hash = api_id`, which reads the name
+                        # the first line just overwrote and silently set
+                        # api_hash to the api_id. The client looked fine but
+                        # failed every login RPC with ApiIdInvalidError
+                        # (api_hash is not sent by initConnection, so an
+                        # already-authorized session masked the bug).
+                        api_id, api_hash = api, api_id
+                    elif not api_id and api_hash is not None:
+                        # TelegramClient(session, api_id, api_hash="...")
+                        # Only the id was shifted; the hash already landed in
+                        # its own parameter.
+                        api_id = api
+                    elif api_id and api_hash is not None:
+                        # TelegramClient(session, <int>, x, y) — there is no
+                        # reading of this that keeps all three values, and
+                        # dropping one silently would hand Telegram the wrong
+                        # credentials. Fail loudly instead.
+                        raise TypeError(
+                            "TelegramClient: ambiguous positional arguments. "
+                            "Slot 2 is `api` (an APIData subclass/instance); "
+                            f"got {type(api).__name__}. Use "
+                            "TelegramClient(session, api_id, api_hash) or "
+                            "TelegramClient(session, api=API.TelegramDesktop)."
+                        )
                 api = None
 
         elif api_id == 0 and api_hash is None:
@@ -818,8 +846,14 @@ class TelegramClient(telethon.TelegramClient, BaseObject):
                 break
 
         if string_session:
+            # Keyword args on purpose: slot 2 of our __init__ is `api`, not
+            # `api_id`, so a positional call would shift the credentials.
             client: TelegramClient = TelegramClient(
-                StringSession(string_session), api_id, api_hash, proxy=proxy, **kwargs
+                StringSession(string_session),
+                api_id=api_id,
+                api_hash=api_hash,
+                proxy=proxy,
+                **kwargs,
             )
         else:
             session_file = cfg.get("session_file") or json_path.stem
@@ -830,7 +864,11 @@ class TelegramClient(telethon.TelegramClient, BaseObject):
                 )
             # Pass path without extension — Telethon appends .session itself
             client = TelegramClient(
-                str(session_path.with_suffix("")), api_id, api_hash, proxy=proxy, **kwargs
+                str(session_path.with_suffix("")),
+                api_id=api_id,
+                api_hash=api_hash,
+                proxy=proxy,
+                **kwargs,
             )
 
         await client.connect()

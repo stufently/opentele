@@ -3,11 +3,16 @@ omit =
     tests/*
     setup.py
     src/debug.py
+# Keep this list surgical. Broad patterns silently shrink the denominator:
+# until 1.3.2 this file excluded bare `pass`, `raise`, `except` and `nocov`,
+# which removed every error path plus whole classes (`MapData`, `MTP`,
+# `extend_class`, the `configs` id types) from the measurement — `account.py`
+# reported 142 statements instead of 659 and the "82.58%" gate covered only
+# ~55% of the package. Error handling in a parser that eats untrusted tdata is
+# exactly what the gate has to watch, so only `pragma: no cover` (an explicit,
+# per-line opt-in) and structurally unreachable lines are excluded now.
 exclude_lines =
     pragma: no cover
-    nocov
-    pass
-    def __repr__
-    def __str__
-    raise
-    except
+    if TYPE_CHECKING:
+    raise NotImplementedError
+    if __name__ == .__main__.:
