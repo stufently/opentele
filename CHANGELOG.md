@@ -3,6 +3,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-07-29 — Pyrogram bridge, MTProto-layer-aware fingerprints, fork divergence sweep
+
 ### Added
 
 - **Pyrogram bridge — `TDesktop.ToPyrogram()` / `TDesktop.FromPyrogram()` and the
