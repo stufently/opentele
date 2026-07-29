@@ -7,6 +7,7 @@ from telethon.network.connection.connection import Connection
 from telethon.network.connection.tcpfull import ConnectionTcpFull
 from telethon.sessions.abstract import Session
 
+from ..tl import pyrogram_bridge as pyro
 from . import shared as td
 from .configs import *
 
@@ -1208,6 +1209,178 @@ class Account(BaseObject):
         return await tl.TelegramClient.FromTDesktop(
             self, session=session, flag=flag, api=api, password=password, **kwargs
         )
+
+    async def ToPyrogram(
+        self,
+        name: str = "opentele",
+        flag: Type[LoginFlag] = UseCurrentSession,
+        api: Union[Type[APIData], APIData] = API.TelegramDesktop,
+        password: str = None,
+        **kwargs,
+    ):
+        """
+        Convert this account to a `pyrogram.Client`.
+
+        Pyrogram is an optional dependency — see `opentele.tl.pyrogram_bridge`.
+
+        ### Arguments:
+            name (`str`, default=`"opentele"`):
+                Pyrogram session name. With the default `in_memory=True` it is
+                only a label; pass `in_memory=False` to write `<name>.session`
+                (in `workdir`, overwriting an existing file of that name).
+
+            flag (`LoginFlag`, default=`UseCurrentSession`):
+                `UseCurrentSession` reuses this account's authorization.
+                `CreateNewSession` authorizes a brand new session over QR login
+                first (via the Telethon bridge) and converts *that* — use it
+                when the target API differs from the one that created `tdata`.
+
+            api (`APIData`, default=`API.TelegramDesktop`):
+                Which API to use. Read more `[here](API)`.
+
+            password (`str`, default=`None`):
+                Two-step verification password, if `CreateNewSession` needs it.
+
+        ### Returns:
+            `pyrogram.Client`: a disconnected client carrying this session. Its
+            `app_version` is re-pointed at Pyrogram's MTProto layer when `api`
+            is a Telegram Desktop fingerprint — Pyrogram and Telethon ship
+            different schemas, so they announce different layers. Pass
+            `align_layer=False` to keep `api.app_version` verbatim.
+
+        ### Examples:
+        ```python
+            tdesk = TDesktop("tdata")
+            client = await tdesk.mainAccount.ToPyrogram()
+            async with client:
+                print(await client.get_me())
+        ```
+        """
+        Expects(
+            (flag == CreateNewSession) or (flag == UseCurrentSession),
+            LoginFlagInvalid("LoginFlag invalid"),
+        )
+        Expects(
+            self.isLoaded(),
+            TDAccountNotLoaded(
+                "I'm not loaded yet, are you sure you're using me correctly?"
+            ),
+        )
+
+        if flag == CreateNewSession:
+            # Reuse the Telethon path — it already knows how to QR-authorize a
+            # new session against a different API — then convert its result.
+            telethonClient = await self.ToTelethon(
+                session=None, flag=CreateNewSession, api=api, password=password
+            )
+            await telethonClient.connect()
+            try:
+                dcId = int(telethonClient.session.dc_id)
+                authKey = telethonClient.session.auth_key.key
+                userId = telethonClient.UserId
+                if userId is None:
+                    await telethonClient.get_me()
+                    userId = telethonClient.UserId
+            finally:
+                await telethonClient.disconnect()
+        else:
+            dcId = int(self.MainDcId)
+            authKey = self.authKey.key
+            userId = self.UserId
+
+        # `api` may be an APIData instance or the class itself — every field
+        # used here is readable either way, exactly like the Telethon bridge
+        # does it. It is NOT randomized via Generate(): a conversion must not
+        # silently change the device fingerprint the caller asked for.
+        return await pyro.make_client(
+            api,
+            dc_id=dcId,
+            auth_key=authKey,
+            user_id=userId,
+            name=name,
+            **kwargs,
+        )
+
+    @staticmethod
+    async def FromPyrogram(
+        pyrogramClient,
+        flag: Type[LoginFlag] = UseCurrentSession,
+        api: Union[Type[APIData], APIData] = API.TelegramDesktop,
+        password: str = None,
+        owner: td.TDesktop = None,
+    ):
+        """
+        Create an `Account` from a `pyrogram.Client`.
+
+        Only `UseCurrentSession` is supported: Pyrogram has no equivalent of
+        Telethon's `QRLoginToNewClient()` here, so there is no way to mint a
+        second session from the first without reimplementing QR login.
+
+        ### Arguments:
+            pyrogramClient (`pyrogram.Client`):
+                The client to convert. It does not need to be connected — the
+                credentials are read from its storage.
+
+            flag (`LoginFlag`, default=`UseCurrentSession`):
+                Must be `UseCurrentSession`.
+
+            api (`APIData`, default=`API.TelegramDesktop`):
+                Which API to use. Read more `[here](API)`.
+
+            owner (`TDesktop`, default=`None`):
+                The `TDesktop` to attach this account to. A new one is created
+                when omitted.
+        """
+        Expects(
+            flag == UseCurrentSession,
+            LoginFlagInvalid(
+                "FromPyrogram() only supports UseCurrentSession — Pyrogram has no "
+                "QR-login-to-new-client path here. Convert to Telethon first if you "
+                "need CreateNewSession."
+            ),
+        )
+
+        credentials = await pyro.read_credentials(pyrogramClient)
+        dc_id, auth_key, user_id = (
+            credentials.dc_id,
+            credentials.auth_key,
+            credentials.user_id,
+        )
+
+        if user_id is None:
+            # An authorized session always has a user_id in storage; if it is
+            # missing, ask the server rather than writing a headless tdata.
+            async with pyrogramClient:
+                me = await pyrogramClient.get_me()
+            user_id = me.id
+
+        dcId = DcId(dc_id)
+        authKey = td.AuthKey(auth_key, td.AuthKeyType.ReadFromFile, dcId)
+
+        if owner is not None:
+            Expects(
+                owner.accountsCount < td.TDesktop.kMaxAccounts,
+                exception=MaxAccountLimit(
+                    f"You can't have more than {td.TDesktop.kMaxAccounts} accounts in one TDesktop client.\n"
+                    "Please create another instance of TDesktop or use Account.FromPyrogram() to create an Account() independently"
+                ),
+            )
+            newAccount = Account(
+                owner=owner,
+                basePath=owner.basePath,
+                api=api,
+                keyFile=owner.keyFile,
+                index=owner.accountsCount,
+            )
+            newAccount._setMtpAuthorizationCustom(dcId, user_id, [authKey])  # type: ignore
+            owner._addSingleAccount(newAccount)
+        else:
+            newOwner = td.TDesktop()
+            newAccount = Account(owner=newOwner, api=api, index=0)
+            newAccount._setMtpAuthorizationCustom(dcId, user_id, [authKey])  # type: ignore
+            newOwner._addSingleAccount(newAccount)
+
+        return newAccount
 
     @staticmethod
     async def FromTelethon(

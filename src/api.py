@@ -13,6 +13,55 @@ _T = TypeVar("_T")
 _RT = TypeVar("_RT")
 
 
+def _read_telethon_layer() -> Optional[int]:
+    """MTProto layer the installed Telethon speaks, or `None`.
+
+    Never raises: a missing or restructured Telethon must degrade to "no layer
+    filtering", not break session generation.
+
+    Module-level on purpose. `debug.IS_DEBUG_MODE` makes `BaseMetaClass` wrap
+    every callable class attribute in `DebugMethod`, which re-invokes it as
+    `fget(self, owner, *args)` — a `@staticmethod` then receives arguments it
+    does not accept, and since the version alignment below runs at *import*
+    time, that turned into `TypeError` on `import opentele.api` with debug on.
+    Plain module functions are not touched by the metaclass.
+    """
+    try:
+        from telethon.tl.alltlobjects import LAYER  # type: ignore
+
+        return int(LAYER)
+    except Exception:  # nocov - depends on the installed telethon
+        return None
+
+
+def _pick_versions_for_layer(
+    versions: List[str], layers: Dict[str, int], layer: Optional[int]
+) -> List[str]:
+    """Versions from `versions` whose MTProto layer is consistent with `layer`.
+
+    Exact matches first. If the caller's layer matches no release, pick the
+    closest layer that does not overshoot it — claiming an older client than
+    the wire suggests is far less conspicuous than claiming a newer one. If the
+    layer is older than everything known, fall back to the *oldest* entry for
+    the same reason: returning everything there would let a client on layer 180
+    advertise a 7.0.x build.
+    """
+    if layer is None:
+        return list(versions)
+
+    exact = [v for v in versions if layers.get(v) == layer]
+    if exact:
+        return exact
+
+    known = [l for v in versions if (l := layers.get(v)) is not None]
+    if not known:  # nocov - table and layer map are asserted in tests
+        return list(versions)
+
+    below = [l for l in known if l < layer]
+    target = max(below) if below else min(known)
+    return [v for v in versions if layers.get(v) == target]
+
+
 class BaseAPIMetaClass(BaseMetaClass):
     """Super high level tactic metaclass"""
 
@@ -352,9 +401,14 @@ class API(BaseObject):
         api_hash = "b18441a1ff607e10a989891a5462e627"
         device_model = "Desktop"
         system_version = "Windows 10"
-        # Phase 2: default version aligned with current Telegram Desktop (v6.8.2 May 2026).
-        # Можно переопределить через `_generate_tdesktop_app_version()` для randomization.
-        app_version = "6.8.2 x64"
+        # Phase 6: the newest STABLE Telegram Desktop speaking the same MTProto
+        # layer as the installed Telethon (1.44 → layer 227 → the 6.9.x line).
+        # Deliberately NOT the newest release: v7.0.x speaks layer 228, and
+        # claiming a 7.0 build while invoking layer 227 is a mismatch a server
+        # can see. This literal is only the fallback — it is replaced at import
+        # time by `_align_desktop_version_with_telethon()` below, so the value
+        # follows whichever Telethon in the supported range is installed.
+        app_version = "6.9.3 x64"
         lang_code = "en"
         system_lang_code = "en-US"
         lang_pack = "tdesktop"
@@ -417,35 +471,93 @@ class API(BaseObject):
         ) -> _T:
             pass
 
-        # Phase 2: список свежих версий Telegram Desktop для рандомизации.
-        # Источник: github.com/telegramdesktop/tdesktop/releases — v5.16.0 (2025-07)
-        # по v6.8.2 (2026-05). ~40 версий. Обновлять при выпуске новых версий.
+        # Phase 6: STABLE Telegram Desktop releases, newest first, v6.0.0
+        # (2025-07-31) through v7.0.6 (2026-07-27). Betas are excluded on
+        # purpose — a beta build reports its version differently, so advertising
+        # a beta-only number is itself a tell.
+        #
+        # Source: github.com/telegramdesktop/tdesktop/releases.
         TELEGRAM_DESKTOP_VERSIONS: typing.ClassVar[List[str]] = [
+            "7.0.6", "7.0.5", "7.0.4", "7.0.3", "7.0.2", "7.0.1",
+            "6.9.3", "6.9.2", "6.9.1", "6.9.0",
             "6.8.2", "6.8.1", "6.8.0",
-            "6.7.8", "6.7.7", "6.7.6", "6.7.5", "6.7.4", "6.7.3", "6.7.2", "6.7.1", "6.7.0",
-            "6.6.4", "6.6.3", "6.6.2", "6.6.1", "6.6.0",
+            "6.7.8", "6.7.6", "6.7.5", "6.7.4", "6.7.3", "6.7.2", "6.7.1", "6.7.0",
+            "6.6.2", "6.6.1", "6.6.0",
             "6.5.1", "6.5.0",
-            "6.4.4", "6.4.3", "6.4.2", "6.4.1", "6.4.0",
-            "6.3.10", "6.3.9", "6.3.8", "6.3.7", "6.3.6", "6.3.4", "6.3.3", "6.3.2", "6.3.1", "6.3.0",
-            "6.2.6", "6.2.5", "6.2.4", "6.2.3", "6.2.2", "6.2.0",
+            "6.4.2", "6.4.1", "6.4.0",
+            "6.3.9", "6.3.8", "6.3.7", "6.3.6", "6.3.4", "6.3.3", "6.3.2", "6.3.1", "6.3.0",
+            "6.2.4", "6.2.3", "6.2.2", "6.2.0",
             "6.1.4", "6.1.3", "6.1.2", "6.1.1", "6.1.0",
-            "6.0.3", "6.0.2", "6.0.1", "6.0.0",
-            "5.16.6", "5.16.5", "5.16.4", "5.16.3", "5.16.2", "5.16.1", "5.16.0",
+            "6.0.2", "6.0.1", "6.0.0",
         ]
 
+        # Phase 6: which MTProto layer each of those builds actually speaks,
+        # read from `Telegram/SourceFiles/mtproto/scheme/api.tl` at the matching
+        # release tag. This is what makes the fingerprint coherent: Telethon
+        # announces a layer in `InvokeWithLayer`, and a real Telegram Desktop of
+        # version X always announces the layer below. Claiming a version whose
+        # layer does not match the one on the wire is a free giveaway.
+        TELEGRAM_DESKTOP_LAYERS: typing.ClassVar[Dict[str, int]] = {
+            "7.0.6": 228, "7.0.5": 228, "7.0.4": 228, "7.0.3": 228, "7.0.2": 228, "7.0.1": 228,
+            "6.9.3": 227, "6.9.2": 227, "6.9.1": 227, "6.9.0": 227,
+            "6.8.2": 225, "6.8.1": 225, "6.8.0": 225,
+            "6.7.8": 224, "6.7.6": 224, "6.7.5": 224, "6.7.4": 224,
+            "6.7.3": 224, "6.7.2": 224, "6.7.1": 224, "6.7.0": 224,
+            "6.6.2": 223, "6.6.1": 223, "6.6.0": 223,
+            "6.5.1": 222, "6.5.0": 222,
+            "6.4.2": 221, "6.4.1": 221, "6.4.0": 221,
+            "6.3.9": 220, "6.3.8": 220, "6.3.7": 220, "6.3.6": 220,
+            "6.3.4": 218, "6.3.3": 218, "6.3.2": 218, "6.3.1": 218, "6.3.0": 218,
+            "6.2.4": 216, "6.2.3": 216, "6.2.2": 216, "6.2.0": 216,
+            "6.1.4": 214, "6.1.3": 214, "6.1.2": 214, "6.1.1": 214, "6.1.0": 214,
+            "6.0.2": 211, "6.0.1": 211, "6.0.0": 211,
+        }
+
         @classmethod
-        def _generate_tdesktop_app_version(cls, unique_id: str = None) -> str:
-            """Генерирует версию Telegram Desktop из списка свежих.
+        def _telethon_layer(cls) -> Optional[int]:
+            """MTProto layer the installed Telethon speaks, or `None`.
 
-            Если задан `unique_id` — детерминированно (sha1-based pick), иначе random.
-            Возвращает строку вида "X.Y.Z x64" (TDesktop всегда x64 на Win/macOS/Linux).
+            Thin wrapper over the module-level `_read_telethon_layer()` — see
+            the note there on why the implementation does not live in the class.
+            """
+            return _read_telethon_layer()
 
-            Источник идеи: Paramon/opentele commit `de639ac` + `41f3ea5`.
+        @classmethod
+        def _versions_for_layer(cls, layer: Optional[int] = None) -> List[str]:
+            """Versions whose MTProto layer is consistent with `layer`.
+
+            See `_pick_versions_for_layer()` for the selection rules.
+            """
+            return _pick_versions_for_layer(
+                cls.TELEGRAM_DESKTOP_VERSIONS, cls.TELEGRAM_DESKTOP_LAYERS, layer
+            )
+
+        @classmethod
+        def _generate_tdesktop_app_version(
+            cls, unique_id: str = None, match_layer: bool = True
+        ) -> str:
+            """Pick a Telegram Desktop version string, e.g. `"6.9.3 x64"`.
+
+            With `unique_id` the pick is deterministic (sha1-based), so the same
+            session always reports the same version; without it, random.
+
+            `match_layer=True` (default) narrows the pool to builds that speak
+            the same MTProto layer as the installed Telethon — see
+            `TELEGRAM_DESKTOP_LAYERS`. Pass `False` to draw from every known
+            release, which buys entropy at the cost of that coherence.
+
+            Idea: Paramon/opentele (`de639ac`, `41f3ea5`) for the randomized
+            list, anmv/opentele for tying it to the layer; both reimplemented
+            here (they hardcode the layer, this reads it from Telethon).
             """
             import hashlib
             import random as _random
 
-            versions = cls.TELEGRAM_DESKTOP_VERSIONS
+            versions = (
+                cls._versions_for_layer(cls._telethon_layer())
+                if match_layer
+                else list(cls.TELEGRAM_DESKTOP_VERSIONS)
+            )
             if unique_id:
                 byteid = unique_id.encode("utf-8")
                 hash_id = int(hashlib.sha1(byteid).hexdigest(), 16)
@@ -488,9 +600,9 @@ class API(BaseObject):
         ### Attributes:
             api_id (`int`)           : `6`
             api_hash (`str`)         : `"eb06d4abfb49dc3eeb1aeb98ae0f581e"`
-            device_model (`str`)     : `"Samsung SM-G998B"`
-            system_version (`str`)   : `"SDK 31"`
-            app_version (`str`)      : `"8.4.1 (2522)"`
+            device_model (`str`)     : `"Samsung Galaxy S25 Ultra (SM-S938)"`
+            system_version (`str`)   : `"SDK 36"`
+            app_version (`str`)      : `"12.9.0 (6966)"`
             lang_code (`str`)        : `"en"`
             system_lang_code (`str`) : `"en-US"`
             lang_pack (`str`)        : `"android"`
@@ -502,7 +614,10 @@ class API(BaseObject):
         # Telegram Android в initConnection отправляет marketing name + SM code.
         device_model = "Samsung Galaxy S25 Ultra (SM-S938)"
         system_version = "SDK 36"
-        app_version = "12.6.0 (6500)"
+        # Phase 6: DrKLO/Telegram `update to 12.9.0 (6966)` (2026-07-16). The
+        # repo tags lag its own releases, so the version comes from the commit
+        # log, which is what actually ships.
+        app_version = "12.9.0 (6966)"
         lang_code = "en"
         system_lang_code = "en-US"
         lang_pack = "android"
@@ -543,9 +658,9 @@ class API(BaseObject):
         ### Attributes:
             api_id (`int`)           : `10840`
             api_hash (`str`)         : `"33c45224029d59cb3ad0c16134215aeb"`
-            device_model (`str`)     : `"iPhone 13 Pro Max"`
-            system_version (`str`)   : `"14.8.1"`
-            app_version (`str`)      : `"8.4"`
+            device_model (`str`)     : `"iPhone 17 Pro Max"`
+            system_version (`str`)   : `"26.0"`
+            app_version (`str`)      : `"12.9.2"`
             lang_code (`str`)        : `"en"`
             system_lang_code (`str`) : `"en-US"`
             lang_pack (`str`)        : `"ios"`
@@ -555,11 +670,11 @@ class API(BaseObject):
         # api_hash         = "7245de8e747a0d6fbe11f7cc14fcc0bb"
         api_id = 10840
         api_hash = "33c45224029d59cb3ad0c16134215aeb"
-        # Phase 2: aligned with current iOS Telegram release-12.7 (May 2026) +
-        # iPhone 17 Pro Max + iOS 26.
+        # Phase 6: newest tag in TelegramMessenger/Telegram-iOS is release-12.9.2
+        # (was release-12.7 when Phase 2 landed). Device/OS unchanged.
         device_model = "iPhone 17 Pro Max"
         system_version = "26.0"
-        app_version = "12.7"
+        app_version = "12.9.2"
         lang_code = "en"
         system_lang_code = "en-US"
         lang_pack = "ios"
@@ -587,6 +702,9 @@ class API(BaseObject):
         # Phase 2.5 (review-fix): TelegramSwift current MARKETING_VERSION = 11.15.
         # Source: github.com/overtake/TelegramSwift Telegram.xcodeproj/project.pbxproj
         # `release` branch. Releases page is sparse so version comes from project file.
+        # Phase 6 re-check: unchanged — that mirror's last commit is 2025-07-29, so
+        # 11.15 is still the newest number with a verifiable source. The shipping
+        # macOS client is likely ahead; do not guess a number here without one.
         device_model = "MacBook Pro 14-inch M5"
         system_version = "macOS 26.0"
         app_version = "11.15"
@@ -602,23 +720,34 @@ class API(BaseObject):
         ### Attributes:
             api_id (`int`)           : `2496`
             api_hash (`str`)         : `"8da85b0d5bfe62527e5b244c209159c3"`
-            device_model (`str`)     : `"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"`
+            device_model (`str`)     : `"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"`
             system_version (`str`)   : `"Windows"`
-            app_version (`str`)      : `"1.28.3 Z"`
+            app_version (`str`)      : `"12.0.36 A"`
             lang_code (`str`)        : `"en"`
             system_lang_code (`str`) : `"en-US"`
-            lang_pack (`str`)        : `""`
+            lang_pack (`str`)        : `"weba"`
         """
 
         api_id = 2496
         api_hash = "8da85b0d5bfe62527e5b244c209159c3"
-        device_model = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
+        # Phase 6: UA refreshed to Chrome 150 (stable, Jul 2026) — the old
+        # Chrome/96 string dated to 2021 and stood out on its own.
+        device_model = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+        # `PLATFORM_ENV` in src/util/browser/windowEnvironment.ts yields
+        # "Windows" / "macOS" / "Linux" / "iOS" / "Android" — so this is right
+        # as-is (unlike Web K, which sends navigator.platform, i.e. "Win32").
         system_version = "Windows"
-        app_version = "1.28.3 Z"
+        # Phase 6: this client is **Telegram Web A** now. `Ajaxy/telegram-tt`
+        # sends `appVersion: "${APP_VERSION} ${APP_CODE_NAME}"` with
+        # `APP_CODE_NAME = 'A'` and its package.json version, currently 12.0.36
+        # — the old `"1.28.3 Z"` was both a stale number and the retired code
+        # name. Class name kept for backwards compatibility.
+        app_version = "12.0.36 A"
         lang_code = "en"
         system_lang_code = "en-US"
-        lang_pack = ""  # I don"t understand why Telegram Z doesn"t use langPack
-        # You can read its source here: https://github.com/Ajaxy/telegram-tt/blob/f7bc473d51c0fe3a3e8b22678b62d2360225aa7c/src/lib/gramjs/client/TelegramClient.js#L131
+        # Phase 6: it *does* send a lang pack now — `LANG_PACK = 'weba'` in
+        # src/config.ts. The empty string here dated to 2021, when it sent none.
+        lang_pack = "weba"
 
     class TelegramWeb_K(APIData):
         """
@@ -628,22 +757,36 @@ class API(BaseObject):
         ### Attributes:
             api_id (`int`)           : `2496`
             api_hash (`str`)         : `"8da85b0d5bfe62527e5b244c209159c3"`
-            device_model (`str`)     : `"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"`
+            device_model (`str`)     : `"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"`
             system_version (`str`)   : `"Win32"`
-            app_version (`str`)      : `"1.0.1 K"`
+            app_version (`str`)      : `"2.2"`
             lang_code (`str`)        : `"en"`
             system_lang_code (`str`) : `"en-US"`
-            lang_pack (`str`)        : `"macos"`
+            lang_pack (`str`)        : `"webk"`
         """
 
+        # Phase 6: version and lang pack refreshed, credentials deliberately NOT.
+        # `.env` in morethanwords/tweb does carry VITE_API_ID=1025907, but
+        # `src/config/app.ts` overrides it right back for the deployment this
+        # class models:
+        #
+        #     if(App.isMainDomain) { // use Webogram credentials then
+        #       App.id = 2496; App.hash = '8da85b0d5bfe62527e5b244c209159c3';
+        #
+        # `MAIN_DOMAINS` being web.telegram.org / webk.telegram.org — so the real
+        # Web K sends 2496, and the `.env` pair only applies to self-hosted
+        # builds. `app_version` is `initConnectionParams.version`
+        # (`src/lib/mtproto/networker.ts`) = VITE_VERSION verbatim: "2.2", with
+        # no " K" suffix and not VITE_VERSION_FULL. `langPack: 'webk'` replaces
+        # the "macos" that came from a 2021 commit of that file.
         api_id = 2496
         api_hash = "8da85b0d5bfe62527e5b244c209159c3"
-        device_model = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
+        device_model = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
         system_version = "Win32"
-        app_version = "1.0.1 K"
+        app_version = "2.2"
         lang_code = "en"
         system_lang_code = "en-US"
-        lang_pack = "macos"  # I"m totally confused, why macos? https://github.dev/morethanwords/tweb/blob/26582590e647766f5890c79e1611c54c1e6e800c/src/config/app.ts#L23
+        lang_pack = "webk"
 
     class Webogram(APIData):
         """
@@ -653,7 +796,7 @@ class API(BaseObject):
         ### Attributes:
             api_id (`int`)           : `2496`
             api_hash (`str`)         : `"8da85b0d5bfe62527e5b244c209159c3"`
-            device_model (`str`)     : `"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"`
+            device_model (`str`)     : `"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"`
             system_version (`str`)   : `"Win32"`
             app_version (`str`)      : `"0.7.0"`
             lang_code (`str`)        : `"en"`
@@ -663,12 +806,43 @@ class API(BaseObject):
 
         api_id = 2496
         api_hash = "8da85b0d5bfe62527e5b244c209159c3"
-        device_model = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
+        device_model = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
         system_version = "Win32"
         app_version = "0.7.0"
         lang_code = "en"
         system_lang_code = "en-US"
         lang_pack = ""  # The same problem as TelegramWeb_K, as TelegramWeb_K was built on Webogram
+
+
+def _align_desktop_version_with_telethon() -> None:
+    """Point `API.TelegramDesktop.app_version` at the installed Telethon's layer.
+
+    The literal in the class body can only ever be right for one layer, and
+    this package supports `telethon>=1.36,<2` — a range spanning many of them.
+    Leaving the literal in place would advertise a 6.9.x build while the wire
+    announces layer 224, which is the exact mismatch `TELEGRAM_DESKTOP_LAYERS`
+    exists to prevent. The list is newest-first, so `[0]` is the newest build
+    that speaks the layer we actually speak.
+
+    The class-body literal stays as the fallback for when Telethon is missing
+    or no longer exposes `LAYER`.
+
+    Goes through the module-level helpers rather than the classmethods: with
+    `debug.IS_DEBUG_MODE` on, the metaclass rewrites class callables and this
+    import-time call would crash the import itself.
+    """
+    desktop = API.TelegramDesktop
+    layer = _read_telethon_layer()
+    if layer is None:  # nocov - depends on the installed telethon
+        return
+    candidates = _pick_versions_for_layer(
+        desktop.TELEGRAM_DESKTOP_VERSIONS, desktop.TELEGRAM_DESKTOP_LAYERS, layer
+    )
+    if candidates:
+        desktop.app_version = f"{candidates[0]} x64"
+
+
+_align_desktop_version_with_telethon()
 
 
 class LoginFlag(int):

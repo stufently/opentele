@@ -216,6 +216,30 @@ class NoInstanceMatched(OpenTeleException):
     """
 
 
+class PyrogramNotInstalled(OpenTeleException):
+    """
+    Pyrogram is an optional dependency and is not installed.
+
+    Install it with ``pip install opentele-ng[pyrogram]`` (or any Pyrogram
+    distribution that provides the ``pyrogram`` package: pyrofork, kurigram).
+    """
+
+
+class PyrogramUnauthorized(OpenTeleException):
+    """
+    The Pyrogram client has no authorization to convert — no ``auth_key`` in
+    its storage, so there is no session to turn into ``tdata``.
+    """
+
+
+class PyrogramSessionUnsupported(OpenTeleException):
+    """
+    The Pyrogram session cannot be represented as ``tdata``: a test-DC session
+    (tdata here always carries the production MTP config) or a bot session
+    (Telegram Desktop cannot sign in as a bot).
+    """
+
+
 @typing.overload
 def Expects(
     condition: bool,

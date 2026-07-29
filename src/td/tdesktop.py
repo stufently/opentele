@@ -587,6 +587,96 @@ class TDesktop(BaseObject):
             **kwargs
         )
 
+    async def ToPyrogram(
+        self,
+        name: str = "opentele",
+        flag: Type[LoginFlag] = UseCurrentSession,
+        api: Union[Type[APIData], APIData] = API.TelegramDesktop,
+        password: str = None,
+        **kwargs,
+    ):
+        """
+        Convert this `TDesktop`'s main account to a `pyrogram.Client`.
+
+        Pyrogram is an optional dependency: install `opentele-ng[pyrogram]`.
+
+        ### Arguments:
+            name (`str`, default=`"opentele"`):
+                Pyrogram session name.
+
+            flag (`LoginFlag`, default=`UseCurrentSession`):
+                The login flag. Read more `[here](LoginFlag)`.
+
+            api (`APIData`, default=`API.TelegramDesktop`):
+                Which API to use. Read more `[here](API)`.
+
+            password (`str`, default=`None`):
+                Two-step verification password if needed.
+
+        ### Examples:
+        ```python
+            tdesk = TDesktop("tdata")
+            client = await tdesk.ToPyrogram()
+            async with client:
+                print(await client.get_me())
+        ```
+        """
+        Expects(
+            self.isLoaded(),
+            TDesktopNotLoaded("You need to load accounts from a tdata folder first"),
+        )
+        Expects(
+            self.accountsCount > 0,
+            TDesktopHasNoAccount("There is no account in this instance of TDesktop"),
+        )
+        assert self.mainAccount
+
+        return await self.mainAccount.ToPyrogram(
+            name=name, flag=flag, api=api, password=password, **kwargs
+        )
+
+    @staticmethod
+    async def FromPyrogram(
+        pyrogramClient,
+        flag: Type[LoginFlag] = UseCurrentSession,
+        api: Union[Type[APIData], APIData] = API.TelegramDesktop,
+        password: str = None,
+    ) -> TDesktop:
+        """
+        Create an instance of `TDesktop` from a `pyrogram.Client`.
+
+        Only `UseCurrentSession` is supported — see `Account.FromPyrogram()`.
+
+        ### Arguments:
+            pyrogramClient (`pyrogram.Client`):
+                The client you want to convert from.
+
+            flag (`LoginFlag`, default=`UseCurrentSession`):
+                The login flag. Read more `[here](LoginFlag)`.
+
+            api (`APIData`, default=`API.TelegramDesktop`):
+                Which API to use. Read more `[here](API)`.
+
+            password (`str`, default=`None`):
+                Two-step verification password if needed.
+
+        ### Examples:
+            Save a pyrogram session to tdata:
+        ```python
+            client = Client("my_account", api_id=..., api_hash=...)
+            tdesk = await TDesktop.FromPyrogram(client)
+            tdesk.SaveTData("new_tdata")
+        ```
+        """
+        _self = TDesktop()
+        _self.__generateLocalKey()
+
+        await td.Account.FromPyrogram(
+            pyrogramClient, flag=flag, api=api, password=password, owner=_self
+        )
+
+        return _self
+
     @staticmethod
     async def FromTelethon(
         telethonClient: tl.TelegramClient,

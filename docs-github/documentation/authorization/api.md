@@ -2,6 +2,14 @@
 
 # API
 
+> **Note (opentele-ng):** this page is upstream's generated reference from 2022
+> and its "Default" columns are frozen at that snapshot — the source links even
+> point at `thedemons/opentele`. The device fingerprints shipped here have moved
+> on several times since (Phase 2, Phase 6). For the values actually used, read
+> [`src/api.py`](https://github.com/stufently/opentele/blob/main/src/api.py) or
+> just `print(API.TelegramDesktop)`. The generator that produced this file was
+> not carried over into the fork, so it is not regenerated on release.
+
 <a id="api.APIData"></a>
 
 

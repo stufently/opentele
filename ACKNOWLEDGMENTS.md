@@ -55,6 +55,19 @@ contributed actual patches or specific discoveries that landed in
 - **[Ehekatech/opentele-tg](https://github.com/Ehekatech/opentele-tg)** —
   QR-login documentation skeleton.
 
+### Phase 6 — Pyrogram bridge + layer-aware fingerprints
+- **[timka-123/opentele](https://github.com/timka-123/opentele)** — the idea of
+  a Pyrogram bridge (`FromPyrogram` / `ToPyrogram`), which upstream listed as an
+  incoming feature and never shipped. The implementation here is written from
+  scratch: theirs does not run (`account` used before assignment, `writeKeys`
+  stamping `MainDcId` onto every key, `session_name=` which Pyrogram 2.x does
+  not accept), which their README acknowledges.
+- **[anmv/opentele](https://github.com/anmv/opentele)** — the insight that the
+  advertised Telegram Desktop version should match the MTProto layer the
+  client actually speaks. They hardcode the version/layer pair; `opentele-ng`
+  derives it from the installed Telethon at runtime
+  (`TELEGRAM_DESKTOP_LAYERS`).
+
 ## Telegram Desktop source
 
 Wire format for the new `lskType` keys, `_settingsKey` AES alignment fix

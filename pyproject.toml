@@ -47,6 +47,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Pyrogram bridge (opentele.tl.pyrogram_bridge). `pyrofork` is the maintained
+# distribution of the `pyrogram` package and matches the tgcrypto-pyrofork we
+# already depend on; vanilla `pyrogram` and `kurigram` provide the same import
+# name and work too.
+pyrogram = [
+    "pyrofork>=2.3",
+]
 test = [
     "pytest>=7",
     "pytest-cov>=4",
@@ -56,6 +63,8 @@ test = [
     # PyQt6 stays test-only — used as the byte-identity oracle in
     # tests/qdatastream/* against the pure-Python QDataStream replacement.
     "PyQt6>=6.6",
+    # Exercises the Pyrogram bridge for real instead of skipping it.
+    "pyrofork>=2.3",
 ]
 
 [project.urls]

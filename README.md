@@ -37,6 +37,7 @@ this one ships it.
 | **Phase 3** | `kMaxAccounts = 6` (was 3, matches TDesktop's `kPremiumMaxAccounts`). `**kwargs` forward in `FromTelethon` → `QRLoginToNewClient` for `proxy`/`connection`/`timeout`. Nuitka-compatible `sharemethod`. Ruff lint replaces broken upstream pylint workflow. |
 | **Phase 4** | 168 → 247 tests: QDataStream golden bytes, `hypothesis` property-based fuzzing (~1000 cases/run), real `TDesktop.SaveTData → load` roundtrip through `MapData.prepareToWrite()`. |
 | **Phase 1.0.3** | **Security:** 6 DoS guards on attacker-controlled `count` fields in `MapData.read` / `_setMtpAuthorization.readKeys` / account-list. Pre-loop cap by `bytesAvailable() // pair_size` + hard regression tests (no fail-open xfail). |
+| **Phase 6** | **Pyrogram bridge** (`ToPyrogram()` / `FromPyrogram()`, optional extra) — the "incoming feature" upstream never shipped; sends `lang_pack`, which Telethon cannot. **MTProto-layer-aware version picking**: the advertised Telegram Desktop version is drawn from builds that speak the same layer Telethon announces on the wire. 2026-07 fingerprints (TDesktop 7.0.6 table, Android 12.9.0, iOS 12.9.2, Chrome 150 UA). |
 
 ## Install
 
@@ -53,6 +54,17 @@ from opentele.api import API, CreateNewSession
 ```
 
 **Runtime deps:** `telethon>=1.36,<2`, `tgcrypto-pyrofork>=1.2.7`. **No Qt.**
+
+Optional Pyrogram bridge (`ToPyrogram()` / `FromPyrogram()`):
+
+```bash
+pip install "opentele-ng[pyrogram]"
+```
+
+Nothing Pyrogram-related is imported unless you call those methods, so the base
+install stays two dependencies. The extra pulls `pyrofork`; vanilla `pyrogram`
+and `kurigram` provide the same `pyrogram` import name and work too. See
+[`docs/examples/pyrogram.md`](docs/examples/pyrogram.md).
 
 System libraries (`libgl1`, `libegl1`, `libxkbcommon-x11-0`, etc.) are **not**
 required — you can deploy on Alpine, distroless, serverless, or any minimal

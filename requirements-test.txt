@@ -7,3 +7,6 @@ ruff>=0.5
 # the byte-identity oracle against opentele-ng's pure-Python QDataStream
 # replacement (src/td/qdatastream.py). Runtime opentele-ng does NOT need PyQt6.
 PyQt6>=6.6
+# Optional runtime extra (opentele-ng[pyrogram]), installed here so
+# tests/test_pyrogram_bridge.py runs instead of skipping.
+pyrofork>=2.3

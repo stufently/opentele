@@ -21,6 +21,9 @@ COPY pyproject.toml requirements.txt requirements-test.txt README.md MANIFEST.in
 COPY src/ ./src/
 COPY tests/ ./tests/
 COPY docs/ ./docs/
+# tests/test_fork_watch.py imports scripts/fork_watch.py directly; without this
+# the whole module skips itself and the triage logic goes untested in CI.
+COPY scripts/ ./scripts/
 
 RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -e ".[test]"

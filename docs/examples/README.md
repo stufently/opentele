@@ -6,6 +6,7 @@ Example usages for **opentele-ng**.
 - [Docker image](docker.md) — `ghcr.io/stufently/opentele-ng` (added in v1.2.0)
 - [Convert tdata to Telethon](convert-tdata-to-telethon.md)
 - [Convert Telethon to tdata](convert-telethon-to-tdata.md)
+- [Pyrogram ↔ tdata](pyrogram.md) — optional `opentele-ng[pyrogram]` extra
 - [Batch-convert many tdata folders](batch-convert.md) — parallel conversion + read-only inspection (added in v1.1.0)
 - [Using official APIs](using-official-apis.md)
 - [QR-code login (no phone OTP, 2FA-aware)](qr-login.md) — added in v0.3.0

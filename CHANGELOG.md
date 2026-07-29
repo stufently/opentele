@@ -3,6 +3,163 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Pyrogram bridge — `TDesktop.ToPyrogram()` / `TDesktop.FromPyrogram()` and the
+  same pair on `Account`** (`opentele.tl.pyrogram_bridge`). Upstream listed this
+  as an "incoming feature" for four years and never shipped it. Pyrogram is an
+  **optional** extra — `pip install opentele-ng[pyrogram]` (pulls `pyrofork`;
+  vanilla `pyrogram` and `kurigram` provide the same import name and also work).
+  Nothing is imported at package import time, so installs without the extra are
+  unaffected.
+  - The session string is produced by Pyrogram's own
+    `Storage.export_session_string()`, not by packing `SESSION_STRING_FORMAT`
+    here, so a format change in any of those distributions cannot silently
+    produce a corrupt session.
+  - `ToPyrogram()` passes the full `APIData` fingerprint through, **including
+    `lang_pack`** — Telethon cannot send that field at all, so this path is a
+    closer match to an official client than the Telethon one.
+  - `in_memory=True` by default: converting a session no longer drops a
+    `.session` file into the caller's working directory as a side effect.
+    `in_memory=False` writes a real, reloadable `<name>.session` — the first
+    cut passed a session string in both cases, and a session string always
+    selects `MemoryStorage` in Pyrogram regardless of the flag, so the file
+    mode silently produced no file (caught by Codex, now covered by a test that
+    reopens the file and reads the key back). An existing file raises
+    `FileExistsError` unless `overwrite=True`: writing into it would replace
+    only the credentials row, leaving Pyrogram's `peers` / `usernames` /
+    `update_state` tables from the previous account behind (also Codex, on
+    re-review — the first fix wrote into the existing file and the docs
+    claimed a full overwrite).
+  - **`app_version` is re-pointed at Pyrogram's own MTProto layer.** Pyrogram
+    ships its own generated schema and is not on Telethon's layer — pyrofork
+    2.3.69 announces 220 where Telethon 1.44 announces 227 — so handing a
+    Pyrogram client the Telethon-aligned Desktop version would have been the
+    very mismatch the layer table exists to prevent. `align_layer=False` opts
+    out. Non-Desktop fingerprints pass through untouched.
+  - **Test-DC and bot sessions are rejected** with `PyrogramSessionUnsupported`
+    instead of silently producing dead `tdata`: `test_mode` and `is_bot` live
+    in the session string, but the `tdata` written here always carries the
+    production MTP config, and Telegram Desktop cannot sign in as a bot.
+  - A storage the bridge opens is closed again; one the caller had already
+    opened is left alone. Leaving it open leaked a SQLite connection that
+    Pyrogram's own `connect()` would then orphan.
+  - `flag=CreateNewSession` is supported on `ToPyrogram()` by QR-authorizing
+    through the existing Telethon path first, then converting that session.
+    `FromPyrogram()` is `UseCurrentSession`-only and says so.
+  - Not adopted from `timka-123/opentele`, which attempted this: that code calls
+    `account.isLoaded()` before `account` is bound (`NameError` on the first
+    call), rewrites `writeKeys` to stamp `MainDcId` onto every key (corrupting
+    `serializeMtpAuthorization()` for multi-DC accounts), passes
+    `session_name=` (not a Pyrogram 2.x parameter) and regresses
+    `AuthKey(account.authKey)` in the Telethon path. Only the idea was taken.
+  - 11 offline tests, including a full `tdata → Pyrogram → tdata → SaveTData →
+    LoadTData` round trip asserting the auth key survives byte-for-byte.
+
+### Changed
+
+- **Advertised Telegram Desktop version is now MTProto-layer-aware.** Telethon
+  announces a layer in `InvokeWithLayer`, and a real Telegram Desktop build of
+  version X always announces the layer that shipped with X — so advertising a
+  version whose layer disagrees with the wire is a mismatch no amount of device
+  randomization hides. New `TELEGRAM_DESKTOP_LAYERS` maps every release in
+  `TELEGRAM_DESKTOP_VERSIONS` to the layer read from
+  `Telegram/SourceFiles/mtproto/scheme/api.tl` at that release tag, and
+  `_generate_tdesktop_app_version()` now draws only from builds matching the
+  installed Telethon's layer (`match_layer=False` opts out). Since the layer is
+  read from Telethon at runtime, this stays correct when the pin moves.
+  `anmv/opentele` had the same insight but hardcodes the pair; this derives it.
+- **`API.TelegramDesktop.app_version`: `6.8.2 x64` → `6.9.3 x64`** with the
+  installed Telethon 1.44. Deliberately *not* the newest release: Telegram
+  Desktop 7.0.x speaks layer 228, Telethon 1.44 speaks 227, and 6.9.3 is the
+  newest **stable** build on 227. The value is **realigned at import** by
+  `_align_desktop_version_with_telethon()`, because this package supports
+  `telethon>=1.36,<2` — a range spanning many layers — and a single literal can
+  only be right for one of them (caught in review: with Telethon 1.38 the old
+  literal advertised a 6.9.x build over layer 193). The class-body literal
+  remains the fallback for when Telethon is absent or stops exposing `LAYER`.
+  **Known limitation:** a Telethon older than the whole table (e.g. 1.38, layer
+  193) has no exact match, so the oldest known build is used — the pair is
+  approximate there, in the conservative direction.
+- **`TELEGRAM_DESKTOP_VERSIONS` refreshed** — was v5.16.0 … v6.8.2 with betas
+  mixed in; now v6.0.0 … v7.0.6, **stable releases only** (a beta build reports
+  its version differently, so advertising a beta-only number is itself a tell).
+- **`API.TelegramAndroid.app_version`: `12.6.0 (6500)` → `12.9.0 (6966)`**
+  (DrKLO/Telegram, 2026-07-16 — its tags lag its releases, so this comes from
+  the commit log).
+- **`API.TelegramIOS.app_version`: `12.7` → `12.9.2`** (newest `release-*` tag).
+- **`API.TelegramWeb_Z`: `app_version` `1.28.3 Z` → `12.0.36 A`, `lang_pack`
+  `""` → `"weba"`.** That client is **Telegram Web A** now: `Ajaxy/telegram-tt`
+  sends `"${APP_VERSION} ${APP_CODE_NAME}"` with `APP_CODE_NAME = 'A'` and
+  `LANG_PACK = 'weba'` (`src/config.ts`), and its `package.json` is at 12.0.36.
+  The old values were a 2021 snapshot — stale number, retired code name, and an
+  empty lang pack from back when it sent none. The class name is kept for
+  backwards compatibility. **Behaviour change** for anyone pinning it.
+  (First pass only bumped the number and left the `Z`/empty lang pack, which
+  would have been an incoherent pair — caught by Codex reading the client
+  source.)
+- **`API.TelegramWeb_K`: `app_version` `"1.0.1 K"` → `"2.2"`, `lang_pack`
+  `"macos"` → `"webk"`.** `src/lib/mtproto/networker.ts` in
+  `morethanwords/tweb` sends `app_version: initConnectionParams.version`, i.e.
+  `VITE_VERSION` verbatim — no `" K"` suffix, not `VITE_VERSION_FULL` — and
+  `src/config/app.ts` reads `langPack: 'webk'` (the `"macos"` here came from a
+  2021 commit of that file). **`api_id` / `api_hash` deliberately unchanged**:
+  `.env` carries `VITE_API_ID=1025907`, but `app.ts` overrides it back to
+  Webogram's `2496 / 8da85…` when `isMainDomain`, and `MAIN_DOMAINS` is
+  `web.telegram.org` / `webk.telegram.org` — the deployment this class models.
+  An intermediate version of this change did adopt the `.env` pair, which would
+  have silently switched the API under existing sessions (caught on Codex
+  re-review; the `.env` credentials only apply to self-hosted builds).
+- **Browser UA in the three web APIs: Chrome 96 (2021) → Chrome 150** (current
+  stable, July 2026). A five-year-old UA stands out on its own.
+- `API.TelegramMacOS.app_version` stays `11.15` — re-checked, and the only
+  verifiable source (`overtake/TelegramSwift`) has not been pushed since
+  2025-07-29. Guessing a higher number without a source would be worse.
+- **`API.Telegram*` docstrings** now show the values the code actually uses;
+  several still advertised upstream's 2022 strings (`"8.4.1 (2522)"`).
+
+### Fixed
+
+- **`import opentele.api` crashed outright with `debug.IS_DEBUG_MODE` on.** The
+  new import-time version alignment called a `@staticmethod` through the class,
+  and the debug metaclass re-invokes wrapped callables as `fget(self, owner)` —
+  so the staticmethod got two arguments it does not take and the import raised
+  `TypeError`. `tests/tdata_test.py` turns that mode on, and any user can. The
+  layer helpers now live at module level (`_read_telethon_layer`,
+  `_pick_versions_for_layer`) where the metaclass cannot reach them, with the
+  classmethods as thin wrappers. (Codex; reproduced and fixed.)
+- **`scripts/fork_watch.py` aborted the whole monthly report on one flaky
+  socket.** `gh_get()` only ever caught `HTTPError`, so a single `URLError`
+  timeout among ~150 requests killed the run with a traceback and no issue
+  filed — reproduced on the first live run of the new sweep. Transient
+  transport errors are now retried twice with backoff, and per-fork failures
+  degrade to a line in a "Compare errors" section instead of aborting.
+
+### Changed (tooling)
+
+- **`fork_watch.py` gained a divergence sweep.** The report used to look only at
+  forks *pushed* in the last 35 days, so a fork that diverged in 2024 and went
+  quiet was invisible to every monthly run — which is exactly how
+  `timka-123`'s Pyrogram work (2024) and `pypchuk`'s fsspec work (2024) went
+  unnoticed until a manual sweep of all 124 forks on 2026-07-29. The report now
+  also compares **every** fork against upstream `main` and lists those ahead,
+  with a `TRIAGED_FORKS` verdict table so already-reviewed forks collapse and
+  only genuinely new divergence needs attention. `has_activity` is true when
+  untriaged divergence exists even if nobody pushed anything this month.
+  - Triage is keyed by the **reviewed head commit** (`TRIAGED_HEADS`, filled in
+    by `python scripts/fork_watch.py --print-heads`), not by repo name: keying
+    by name alone would trust a fork forever after one review, recreating the
+    blind spot this sweep was written to close. A fork that gains commits comes
+    back as untriaged with its earlier verdict quoted for context. (Codex.)
+  - A fork that could not be compared now counts toward "needs attention" too —
+    previously the error section was printed but `has_activity` stayed false,
+    so no issue was filed and an unchecked fork looked like a clean one.
+  - A moved fork keeps its earlier verdict in the report even when merge-noise
+    filtering leaves it with no listable commits — an early `continue` used to
+    drop exactly the context the reader needs (Codex, re-review).
+  - `tests/test_fork_watch.py` covers the triage decisions (stubbed network);
+    `Dockerfile.test` now copies `scripts/` so they actually run in CI.
+
 ## [1.3.2] - 2026-07-29 — positional `api_hash` fix, honest coverage gate, working Docker test flow
 
 ### Fixed

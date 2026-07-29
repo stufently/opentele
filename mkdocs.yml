@@ -36,6 +36,7 @@ nav:
       - Docker: examples/docker.md
       - tdata → Telethon: examples/convert-tdata-to-telethon.md
       - Telethon → tdata: examples/convert-telethon-to-tdata.md
+      - Pyrogram ↔ tdata: examples/pyrogram.md
       - Batch conversion: examples/batch-convert.md
       - Official APIs: examples/using-official-apis.md
       - QR login: examples/qr-login.md
