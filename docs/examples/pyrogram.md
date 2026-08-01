@@ -43,13 +43,29 @@ get a `.session` file instead:
 client = await tdesk.ToPyrogram(name="me", in_memory=False, workdir="/tmp/sessions")
 ```
 
-That writes `<name>.session` in `workdir` (the process CWD if you omit it). If
-the file already exists you get `FileExistsError`: Pyrogram would keep its
-`peers` / `usernames` / `update_state` tables and the new session would inherit
-the previous account's cached contacts. Pass `overwrite=True` to replace the
-file outright, or pick another `name`.
+That writes `<name>.session` in `workdir`. Omit `workdir` and the file lands
+next to your entry script (`sys.argv[0]`'s directory, Pyrogram's default) —
+**not** in the process CWD. If the file already exists you get
+`FileExistsError`: Pyrogram would keep its `peers` / `usernames` /
+`update_state` tables and the new session would inherit the previous account's
+cached contacts. Pass `overwrite=True` to replace the file outright, or pick
+another `name`.
 
 Any other keyword goes straight to `pyrogram.Client`, e.g. `proxy={...}`.
+
+With `flag=CreateNewSession` the QR login is performed by an internal Telethon
+client, and `**kwargs` never reach it — Telethon and Pyrogram disagree on the
+shape of `proxy` (tuple vs dict). Configure that leg separately, or the
+authorization goes out over a direct connection:
+
+```python
+client = await tdesk.ToPyrogram(
+    flag=CreateNewSession,
+    api=API.TelegramAndroid,
+    proxy={"scheme": "socks5", "hostname": "127.0.0.1", "port": 9050},
+    telethon_kwargs={"proxy": ("socks5", "127.0.0.1", 9050)},
+)
+```
 
 ### `app_version` follows Pyrogram's MTProto layer
 

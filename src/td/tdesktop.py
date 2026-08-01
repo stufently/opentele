@@ -593,6 +593,7 @@ class TDesktop(BaseObject):
         flag: Type[LoginFlag] = UseCurrentSession,
         api: Union[Type[APIData], APIData] = API.TelegramDesktop,
         password: str = None,
+        telethon_kwargs: dict = None,
         **kwargs,
     ):
         """
@@ -613,6 +614,11 @@ class TDesktop(BaseObject):
             password (`str`, default=`None`):
                 Two-step verification password if needed.
 
+            telethon_kwargs (`dict`, default=`None`):
+                Arguments for the internal `TelegramClient` that performs the
+                `CreateNewSession` QR login — `**kwargs` go to
+                `pyrogram.Client` only. See `Account.ToPyrogram()`.
+
         ### Examples:
         ```python
             tdesk = TDesktop("tdata")
@@ -632,7 +638,12 @@ class TDesktop(BaseObject):
         assert self.mainAccount
 
         return await self.mainAccount.ToPyrogram(
-            name=name, flag=flag, api=api, password=password, **kwargs
+            name=name,
+            flag=flag,
+            api=api,
+            password=password,
+            telethon_kwargs=telethon_kwargs,
+            **kwargs,
         )
 
     @staticmethod

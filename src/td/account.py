@@ -1216,6 +1216,7 @@ class Account(BaseObject):
         flag: Type[LoginFlag] = UseCurrentSession,
         api: Union[Type[APIData], APIData] = API.TelegramDesktop,
         password: str = None,
+        telethon_kwargs: dict = None,
         **kwargs,
     ):
         """
@@ -1227,7 +1228,9 @@ class Account(BaseObject):
             name (`str`, default=`"opentele"`):
                 Pyrogram session name. With the default `in_memory=True` it is
                 only a label; pass `in_memory=False` to write `<name>.session`
-                (in `workdir`, overwriting an existing file of that name).
+                in `workdir` — omit `workdir` and Pyrogram puts it next to the
+                entry script, not in the process CWD. An existing file of that
+                name raises `FileExistsError` unless you pass `overwrite=True`.
 
             flag (`LoginFlag`, default=`UseCurrentSession`):
                 `UseCurrentSession` reuses this account's authorization.
@@ -1240,6 +1243,16 @@ class Account(BaseObject):
 
             password (`str`, default=`None`):
                 Two-step verification password, if `CreateNewSession` needs it.
+
+            telethon_kwargs (`dict`, default=`None`):
+                Extra arguments for the *internal* `TelegramClient` that
+                performs the `CreateNewSession` QR login. `**kwargs` reach
+                `pyrogram.Client` only, and the two libraries disagree on the
+                shape of `proxy` (Telethon takes a tuple, Pyrogram a dict), so
+                the connection settings for the login leg are passed here.
+                Without them the QR authorization goes out over a direct
+                connection even when the Pyrogram client is proxied.
+                Ignored for `UseCurrentSession`, which never connects.
 
         ### Returns:
             `pyrogram.Client`: a disconnected client carrying this session. Its
@@ -1268,10 +1281,23 @@ class Account(BaseObject):
         )
 
         if flag == CreateNewSession:
+            # Without this the collision surfaces as a bare "got multiple
+            # values for keyword argument" from a call the caller never made.
+            reserved = {"session", "flag", "api", "password"} & set(telethon_kwargs or {})
+            if reserved:
+                raise ValueError(
+                    f"telethon_kwargs may not set {sorted(reserved)}: ToPyrogram() "
+                    "fixes those for the login leg. Pass `api` / `password` as "
+                    "arguments of ToPyrogram() itself."
+                )
             # Reuse the Telethon path — it already knows how to QR-authorize a
             # new session against a different API — then convert its result.
             telethonClient = await self.ToTelethon(
-                session=None, flag=CreateNewSession, api=api, password=password
+                session=None,
+                flag=CreateNewSession,
+                api=api,
+                password=password,
+                **(telethon_kwargs or {}),
             )
             await telethonClient.connect()
             try:

@@ -213,6 +213,81 @@ async def test_overwrite_replaces_the_file_wholesale(tmp_path) -> None:
         await reopened.storage.close()
 
 
+async def test_existing_file_guard_follows_pyrogram_not_the_cwd(
+    tmp_path, monkeypatch
+) -> None:
+    """Pyrogram's default `workdir` is the entry script's directory, never the
+    process CWD, so a CWD-based guard would stat a path that is never written:
+    the second conversion would silently inherit the first account's
+    peers/usernames/update_state rows. Emulated with a Client whose default
+    workdir is somewhere other than the CWD."""
+    script_dir = tmp_path / "scriptdir"
+    script_dir.mkdir()
+    cwd = tmp_path / "cwd"
+    cwd.mkdir()
+    monkeypatch.chdir(cwd)
+
+    class DefaultWorkdirClient(pyrogram.Client):
+        def __init__(self, *args, **kwargs):
+            kwargs.setdefault("workdir", str(script_dir))
+            super().__init__(*args, **kwargs)
+
+    monkeypatch.setattr(pyrogram, "Client", DefaultWorkdirClient)
+
+    kwargs = dict(
+        dc_id=DC_ID, auth_key=DUMMY_KEY, user_id=USER_ID,
+        name="defaults", in_memory=False,
+    )
+    await pyro.make_client(API.TelegramDesktop, **kwargs)
+
+    assert (script_dir / "defaults.session").exists()
+    assert not (cwd / "defaults.session").exists()
+
+    with pytest.raises(FileExistsError):
+        await pyro.make_client(API.TelegramDesktop, **kwargs)
+
+    # And `overwrite` must reach the same file — otherwise the "wholesale
+    # replace" quietly degrades into an in-place credential swap.
+    other_key = bytes(range(255, -1, -1))
+    await pyro.make_client(
+        API.TelegramDesktop, **{**kwargs, "auth_key": other_key}, overwrite=True
+    )
+    reopened = pyrogram.Client(
+        "defaults",
+        api_id=API.TelegramDesktop.api_id,
+        api_hash=API.TelegramDesktop.api_hash,
+        workdir=str(script_dir),
+    )
+    await reopened.storage.open()
+    try:
+        assert await reopened.storage.auth_key() == other_key
+    finally:
+        await reopened.storage.close()
+
+
+async def test_non_file_storage_skips_the_file_guard(tmp_path, monkeypatch) -> None:
+    """`in_memory=False` does not always mean "a file": a caller-supplied
+    `storage=` (or a Mongo backend) has no path to check, and its `database`
+    attribute is a live handle rather than one — treating it as a path would
+    turn a supported setup into a TypeError."""
+    monkeypatch.chdir(tmp_path)
+    storage = pyrogram.storage.MemoryStorage("custom")
+
+    client = await pyro.make_client(
+        API.TelegramDesktop,
+        dc_id=DC_ID,
+        auth_key=DUMMY_KEY,
+        user_id=USER_ID,
+        name="custom",
+        in_memory=False,
+        storage=storage,
+        workdir=str(tmp_path),
+    )
+
+    assert client.storage is storage
+    assert not list(tmp_path.glob("*.session"))
+
+
 # === Account / TDesktop bridges ===
 
 
@@ -289,6 +364,63 @@ async def test_from_pyrogram_rejects_unauthorized_client() -> None:
     )
     with pytest.raises(PyrogramUnauthorized):
         await TDesktop.FromPyrogram(client)
+
+
+async def test_create_new_session_routes_kwargs_to_the_right_client(monkeypatch) -> None:
+    """`**kwargs` configure the returned `pyrogram.Client`; the QR login is run
+    by an internal Telethon client that takes its own settings. Silently
+    dropping them would send the authorization out over a direct connection —
+    and Telethon's `proxy` tuple would then be handed to Pyrogram, which wants
+    a dict."""
+    seen: dict = {}
+
+    class FakeTelethon:
+        UserId = USER_ID
+
+        class session:  # noqa: N801 - mirrors Telethon's attribute layout
+            dc_id = DC_ID
+
+            class auth_key:  # noqa: N801
+                key = DUMMY_KEY
+
+        async def connect(self) -> None:
+            pass
+
+        async def disconnect(self) -> None:
+            pass
+
+    async def fake_to_telethon(self, **kwargs):
+        seen.update(kwargs)
+        return FakeTelethon()
+
+    monkeypatch.setattr(Account, "ToTelethon", fake_to_telethon)
+
+    tdesk = _build_tdesktop()
+    telethon_proxy = ("socks5", "127.0.0.1", 9050)
+    pyrogram_proxy = {"scheme": "socks5", "hostname": "127.0.0.1", "port": 9050}
+    client = await tdesk.ToPyrogram(
+        flag=CreateNewSession,
+        telethon_kwargs={"proxy": telethon_proxy},
+        proxy=pyrogram_proxy,
+    )
+
+    assert seen["proxy"] == telethon_proxy, "QR login must not go out unproxied"
+    assert "telethon_kwargs" not in seen
+    assert client.proxy == pyrogram_proxy
+
+    await client.storage.open()
+    try:
+        assert await client.storage.auth_key() == DUMMY_KEY
+    finally:
+        await client.storage.close()
+
+    # Keys ToPyrogram() fixes itself would otherwise blow up as a bare
+    # "got multiple values for keyword argument" from a call the caller
+    # never wrote.
+    with pytest.raises(ValueError, match="telethon_kwargs"):
+        await tdesk.ToPyrogram(
+            flag=CreateNewSession, telethon_kwargs={"api": API.TelegramAndroid}
+        )
 
 
 async def test_to_pyrogram_rejects_invalid_flag() -> None:

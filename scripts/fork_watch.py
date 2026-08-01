@@ -211,7 +211,7 @@ def recent_commits(repo_full_name: str, since: dt.datetime) -> list[dict]:
         return [{"_error": "non-list response"}]
     out: list[dict] = []
     for c in commits:
-        msg = (c.get("commit", {}).get("message") or "").splitlines()[0]
+        msg = ((c.get("commit", {}).get("message") or "").splitlines() or [""])[0]
         if any(noise in msg for noise in NOISE_MESSAGES):
             continue
         out.append({
@@ -257,10 +257,13 @@ def compare_to_upstream(fork: dict) -> dict:
         "ahead": data.get("ahead_by", 0),
         "behind": data.get("behind_by", 0),
         "commits": commits,
-        # Fork tip. `compare` returns commits oldest-first and caps at 250; for
-        # a fork past that cap the tip is missing, so fall back to a marker that
-        # can never equal a recorded head — better re-triaged than silently
-        # trusted.
+        # Fork tip. `compare` returns commits oldest-first and caps the list at
+        # 250 while `total_commits` reports the real number — but it drops the
+        # *oldest* ones, so the last entry is the head even when truncated
+        # (verified against the API: torvalds/linux v6.0...v6.1, 250 of 10000
+        # returned, last SHA == the v6.1 commit). Only an empty list leaves us
+        # without a tip; then fall back to a marker that can never equal a
+        # recorded head — better re-triaged than silently trusted.
         "head": (all_commits[-1].get("sha") if all_commits else "") or "unknown",
     }
 

@@ -18,7 +18,6 @@ those distributions cannot silently produce a corrupt session.
 """
 from __future__ import annotations
 
-import os
 import typing
 from pathlib import Path
 from typing import Any, Dict, NamedTuple, Optional
@@ -154,6 +153,29 @@ def _client_params(api: Any, align_layer: bool, kwargs: Dict[str, Any]) -> Dict[
     return params
 
 
+def _session_path(pyrogram: Any, client: Any, name: str) -> Optional[Path]:
+    """Where this client's `.session` file will actually land, or `None` when
+    the session is not file-backed and there is nothing on disk to guard —
+    a caller-supplied `storage=`, or the Mongo backend some distributions ship
+    (whose `database` is a live handle, not a path).
+
+    Not the process CWD: an omitted `workdir` resolves to the *entry script's*
+    directory (`Path(sys.argv[0]).parent`), so probing `os.getcwd()` would
+    guard a path Pyrogram never writes. `client.storage.database` is the file
+    Pyrogram itself opens; the `workdir` join is a fallback for distributions
+    that name the attribute differently.
+    """
+    file_storage = getattr(pyrogram.storage, "FileStorage", None)
+    if file_storage is not None and not isinstance(client.storage, file_storage):
+        return None
+    database = getattr(client.storage, "database", None)
+    if database is not None:
+        return Path(database)
+    # nocov - only reached by a distribution that renamed `database`
+    extension = getattr(client.storage, "FILE_EXTENSION", ".session")
+    return Path(client.workdir) / f"{name}{extension}"
+
+
 async def make_client(
     api: Any,
     dc_id: int,
@@ -180,7 +202,8 @@ async def make_client(
     `in_memory=True` (default) keeps the session in memory — converting a
     session should not write a `.session` file into the caller's working
     directory as a side effect. `in_memory=False` writes `<name>.session` in
-    `workdir` (the process CWD unless you pass one).
+    `workdir`; omit it and Pyrogram puts the file next to the entry script
+    (`sys.argv[0]`'s directory), which is *not* the process CWD.
 
     An existing file of that name raises `FileExistsError` unless
     `overwrite=True`, which **deletes** it first. Writing into it would only
@@ -205,9 +228,12 @@ async def make_client(
             name, session_string=session_string, in_memory=True, **params
         )
 
-    workdir = Path(params.get("workdir") or os.getcwd())
-    session_file = workdir / f"{name}.session"
-    if session_file.exists():
+    # Build the client first: only it knows where the session lands. Pyrogram
+    # resolves `workdir` itself, and constructing a `FileStorage` does not
+    # touch the file — that happens in `open()` below.
+    client = pyrogram.Client(name, in_memory=False, **params)
+    session_file = _session_path(pyrogram, client, name)
+    if session_file is not None and session_file.exists():
         if not overwrite:
             raise FileExistsError(
                 f"{session_file} already exists. Pyrogram would keep its peers/"
@@ -217,7 +243,6 @@ async def make_client(
             )
         session_file.unlink()
 
-    client = pyrogram.Client(name, in_memory=False, **params)
     await client.storage.open()
     try:
         await _populate(client.storage, api.api_id, dc_id, auth_key, user_id)

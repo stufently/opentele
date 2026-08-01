@@ -3,6 +3,44 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Pyrogram file sessions: the "don't reuse another account's `.session`" guard
+  probed the wrong directory.** It resolved an omitted `workdir` to
+  `os.getcwd()`, but Pyrogram defaults it to the *entry script's* directory
+  (`Path(sys.argv[0]).parent`). The guard therefore stat'ed a path that is never
+  written: a second `ToPyrogram(in_memory=False)` for a different account reused
+  the existing file instead of raising `FileExistsError`, inheriting the previous
+  account's `peers` / `usernames` / `update_state` rows — exactly what the guard
+  was added to stop — and `overwrite=True` never unlinked anything, silently
+  degrading a wholesale replace into an in-place credential swap. The client is
+  now built first and the path taken from its own storage, so the check always
+  follows Pyrogram. Only the default-`workdir` case was affected; every test
+  passed `workdir=` explicitly, which is why it went unnoticed.
+- **`Account.ToPyrogram(flag=CreateNewSession)` dropped connection settings for
+  the QR login.** `**kwargs` reach `pyrogram.Client` only, so a `proxy=` meant
+  for the conversion left the authorization of the *new* session going out over
+  a direct connection, and the Telethon-shaped tuple was then handed to Pyrogram,
+  which wants a dict. The login leg now takes its own `telethon_kwargs={...}`
+  (also on `TDesktop.ToPyrogram()`), and the split is documented on both. Keys
+  `ToPyrogram()` fixes itself (`session`, `flag`, `api`, `password`) now raise a
+  `ValueError` naming them instead of a bare "got multiple values for keyword
+  argument" from a call the caller never wrote.
+- **`scripts/fork_watch.py`: a commit with an empty message aborted the whole
+  monthly run** with an `IndexError` in `recent_commits()` (`--allow-empty-message`
+  is legal), filing no issue at all. Uses the same safe idiom as
+  `compare_to_upstream()` now.
+- Docs said an omitted `workdir` puts `<name>.session` in the process CWD
+  (`docs/examples/pyrogram.md`, `pyrogram_bridge.make_client()`,
+  `Account.ToPyrogram()`); it lands next to the entry script.
+- `fork_watch.compare_to_upstream()` carried a comment claiming a >250-commit
+  compare loses the fork tip. Checked against the live API (torvalds/linux
+  `v6.0...v6.1` returns 250 of 10000 commits and still ends on the `v6.1`
+  commit): GitHub drops the *oldest* entries, so the last one is always the
+  head. Behaviour unchanged, comment corrected and pinned by a test — the wrong
+  comment had already produced one "fix" that would have re-reported every large
+  fork every month.
+
 ## [1.4.0] - 2026-07-29 — Pyrogram bridge, MTProto-layer-aware fingerprints, fork divergence sweep
 
 ### Added
