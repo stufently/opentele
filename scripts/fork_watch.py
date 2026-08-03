@@ -56,8 +56,12 @@ TRIAGED_FORKS: dict[str, str] = {
                          "its QDataStream.Status.Ok→.Ok is PyQt5-only, would break PyQt6",
     "Paramon/opentele": "2026-07-29: device/app_version refresh — adopted in Phase 2, "
                         "ours is newer",
-    "anmv/opentele": "2026-07-29: same lineage as Paramon; layer-pinning idea adopted "
-                     "properly (TELEGRAM_DESKTOP_LAYERS)",
+    "anmv/opentele": "2026-08-03 (was 2026-07-29): same lineage as Paramon; layer-pinning idea "
+                     "adopted properly (TELEGRAM_DESKTOP_LAYERS). Re-read at 4df17bd 'layer 227 + "
+                     "telethon 1.44.0': hand-maintained version list, nothing to take — and its "
+                     "6.9.4 is a beta (prerelease:true), which test_no_beta_versions_in_table "
+                     "already forbids. Checking it did surface that stable v7.0.7 was missing "
+                     "from our table; backfilled at layer 228",
     "RobertAzovski/opentele": "2026-07-29: lskTypes 0x1A-0x1D — adopted in 1.2.x",
     "Snowing/opentele": "2026-07-29: lskBackgroundOldOld fix — adopted in 1.2.x",
     "gfhfyjbr/opentele": "2026-07-29: lskCustomEmojiKeys/SearchSuggestions/WebviewTokens "
