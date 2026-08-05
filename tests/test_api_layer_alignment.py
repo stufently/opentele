@@ -100,7 +100,7 @@ def test_match_layer_false_widens_the_pool() -> None:
 def test_versions_for_layer_exact_match_wins() -> None:
     assert TD._versions_for_layer(227) == ["6.9.3", "6.9.2", "6.9.1", "6.9.0"]
     assert TD._versions_for_layer(228) == [
-        "7.0.7", "7.0.6", "7.0.5", "7.0.4", "7.0.3", "7.0.2", "7.0.1",
+        "7.0.8", "7.0.7", "7.0.6", "7.0.5", "7.0.4", "7.0.3", "7.0.2", "7.0.1",
     ]
 
 
@@ -108,7 +108,7 @@ def test_versions_for_layer_falls_back_below_when_unknown() -> None:
     """A Telethon newer than this table must not fall back to ancient builds:
     it picks the highest layer that does not overshoot."""
     assert TD._versions_for_layer(999) == [
-        "7.0.7", "7.0.6", "7.0.5", "7.0.4", "7.0.3", "7.0.2", "7.0.1",
+        "7.0.8", "7.0.7", "7.0.6", "7.0.5", "7.0.4", "7.0.3", "7.0.2", "7.0.1",
     ]
 
 
@@ -134,8 +134,13 @@ def test_no_beta_versions_in_table() -> None:
     assert not present, f"beta builds must not be advertised: {sorted(present)}"
 
 
-@pytest.mark.parametrize("version", ["7.0.7", "7.0.6", "6.9.3", "6.8.2", "6.0.0"])
+@pytest.mark.parametrize("version", ["7.0.8", "7.0.1", "6.9.3", "6.8.2", "6.0.0"])
 def test_known_layer_values(version: str) -> None:
-    """Spot-check against api.tl at the matching release tag."""
-    expected = {"7.0.7": 228, "7.0.6": 228, "6.9.3": 227, "6.8.2": 225, "6.0.0": 211}
+    """Spot-check against api.tl at the matching release tag.
+
+    6.9.3 and 7.0.1 straddle the 227 -> 228 boundary: the newest stable still on
+    227 and the oldest already on 228 (7.0.0 is a beta, so it is not in the
+    table). Getting either wrong shifts every layer lookup around the cutover.
+    """
+    expected = {"7.0.8": 228, "7.0.1": 228, "6.9.3": 227, "6.8.2": 225, "6.0.0": 211}
     assert TD.TELEGRAM_DESKTOP_LAYERS[version] == expected[version]

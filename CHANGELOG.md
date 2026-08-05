@@ -5,22 +5,27 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- **Telegram Desktop v7.0.7 (2026-08-01) added to the fingerprint table**, layer
-  228 (read from `api.tl` at the `v7.0.7` tag — the same layer 7.0.6 speaks).
-  No effect on the default fingerprint today: Telethon 1.44.0 announces layer
-  **227**, so the default stays `6.9.3 x64`. It changes the layer-228 pool only,
-  which is what `match_layer=False` draws from now and what the default becomes
-  once a Telethon speaking 228 ships. Found while checking `anmv/opentele`
-  `4df17bd` from the monthly fork sweep; that fork's own change was already
-  covered here, but verifying it against upstream tdesktop releases surfaced the
-  gap. v6.9.4 stays out — GitHub reports it `prerelease: true`, and the beta
-  guard in `test_no_beta_versions_in_table` already names it.
+- **Telegram Desktop v7.0.7 (2026-08-01) and v7.0.8 (2026-08-03) added to the
+  fingerprint table**, both layer 228 (read from `api.tl` at each tag — the same
+  layer 7.0.6 speaks). No effect on the default fingerprint today: Telethon
+  1.44.0 announces layer **227**, so the default stays `6.9.3 x64`. It changes
+  the layer-228 pool only, which is what `match_layer=False` draws from now and
+  what the default becomes once a Telethon speaking 228 ships. 7.0.7 was found
+  while checking `anmv/opentele` `4df17bd` from the monthly fork sweep — that
+  fork's own change was already covered here, but verifying it against upstream
+  tdesktop releases surfaced the gap; 7.0.8 landed hours later the same day and
+  was picked up on the next pass. v6.9.4 stays out — GitHub reports it
+  `prerelease: true`, and the beta guard in `test_no_beta_versions_in_table`
+  already names it.
 
 ### Fixed
 
 - README advertised 352 tests / 349 passing; the suite has been at 355 + 3
-  skipped since 1.4.0 (356 + 3 with the `v7.0.7` layer spot-check added above).
-  Counted on the Python 3.14 Docker image, not inferred.
+  skipped since 1.4.0 (356 + 3 with the layer spot-check added above).
+  Counted on the Python 3.14 Docker image, not inferred. The same paragraph
+  claimed 356 pass "everywhere", which was never true below 3.13: the
+  version-gated test is one of those 356, not an extra, so 3.10 – 3.12 run
+  355 + 4. Both numbers are stated now.
 - **Pyrogram file sessions: the "don't reuse another account's `.session`" guard
   probed the wrong directory.** It resolved an omitted `workdir` to
   `os.getcwd()`, but Pyrogram defaults it to the *entry script's* directory
