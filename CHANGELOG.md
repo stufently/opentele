@@ -36,13 +36,18 @@ All notable changes to this project will be documented in this file.
 - ⚠️ **Still open, owner action only:** the repository is flagged as a fork of
   `thedemons/opentele`. GitHub excludes forks from repository and code search
   and from topic listings, so the topics above stay invisible until the flag is
-  cleared. It cannot be cleared from the CLI or the API. Two routes exist:
-  **Settings → General → Danger Zone → "Leave fork network"** (self-serve, but
-  GitHub's own documentation warns that stars, watchers, issues and pull
-  requests are **not** guaranteed to survive the detach — read the confirmation
-  dialog before accepting), or a request to **GitHub Support** to detach the
-  repository, which is the route to take if the 20 stars matter. Recreating the
-  repository from scratch would lose the stars outright and is not an option.
+  cleared. It cannot be cleared from the CLI or the API, and the decision is the
+  owner's because it is not free. The self-serve route is
+  **Settings → General → Danger Zone → "Leave fork network"**; this repository
+  meets its three conditions (public, 4 MB, no child forks). But GitHub states
+  plainly that a detach does not retain "issues, pull requests, wikis, stars,
+  watchers, comments, child forks, or other metadata" — only git commit history
+  survives — and that leaving the network is **permanent and cannot be undone**.
+  For this repository that means trading the 20 stars and the 1 open issue for
+  search and topic visibility. The alternative is asking **GitHub Support** to
+  perform the detach and to say up front whether they can carry the stars over;
+  that question should be settled before anyone clicks the button. Recreating
+  the repository by hand loses the same metadata and gains nothing.
 - **Telegram Desktop v7.0.7 (2026-08-01) and v7.0.8 (2026-08-03) added to the
   fingerprint table**, both layer 228 (read from `api.tl` at each tag — the same
   layer 7.0.6 speaks). No effect on the default fingerprint today: Telethon
