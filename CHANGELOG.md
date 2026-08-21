@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **Discoverability: repository metadata and the README now name the PyPI
+  package.** The repo is `stufently/opentele`, the package is `opentele-ng` —
+  anyone searching GitHub for the name they typed into `pip install` found
+  nothing. Three fixes, no code touched: (1) twelve GitHub topics added
+  (`telegram`, `telethon`, `tdata`, `mtproto`, `python`, `telegram-desktop`,
+  `pyrogram`, `telegram-api`, `telegram-client`, `opentele`, `opentele-ng`,
+  `session-converter`) — GitHub accepts topics on a fork, they just do not
+  surface in topic listings while the fork flag is set; (2) the repo description
+  rewritten to lead with `opentele-ng` and the install command (it was still the
+  description inherited from upstream, which mentioned neither this fork, nor
+  the package name, nor the dropped Qt dependency); (3) the repo homepage moved
+  from `opentele.readthedocs.io` to
+  <https://stufently.github.io/opentele/>. That readthedocs project belongs to
+  **thedemons** and documents upstream — the link under this repo's title was
+  sending every visitor to the unmaintained original.
+- **README opens with the package name.** `PyPI package name: opentele-ng`,
+  `pip install opentele-ng`, the note that the import path stays `opentele`, and
+  a one-sentence statement of what the fork changes (Python 3.10 – 3.14, no Qt
+  runtime) now sit above the badges instead of being spread across the
+  "Why this fork" and "Install" sections further down. The old lead blockquote
+  was dropped rather than kept alongside it — it repeated the same three claims
+  a few lines later. The same package-name lead was added to `docs/index.md`,
+  which is what the Pages homepage now serves.
+- **Upstream's activity dates corrected in `README.md` and `docs/index.md`.**
+  Both said upstream was "last touched in 2022". Its last PyPI release is
+  January 2022 (1.15.1), but its last commit is 2024-07-15 (`1a6f081`) — the
+  "new tdata" work merged from PR #119. The 2022-only phrasing overstated the
+  case for this fork; the dates are now given separately and correctly.
+- ⚠️ **Still open, owner action only:** the repository is flagged as a fork of
+  `thedemons/opentele`. GitHub excludes forks from repository and code search
+  and from topic listings, so the topics above stay invisible until the flag is
+  cleared. It cannot be cleared from the CLI or the API. Two routes exist:
+  **Settings → General → Danger Zone → "Leave fork network"** (self-serve, but
+  GitHub's own documentation warns that stars, watchers, issues and pull
+  requests are **not** guaranteed to survive the detach — read the confirmation
+  dialog before accepting), or a request to **GitHub Support** to detach the
+  repository, which is the route to take if the 20 stars matter. Recreating the
+  repository from scratch would lose the stars outright and is not an option.
 - **Telegram Desktop v7.0.7 (2026-08-01) and v7.0.8 (2026-08-03) added to the
   fingerprint table**, both layer 228 (read from `api.tl` at each tag — the same
   layer 7.0.6 speaks). No effect on the default fingerprint today: Telethon

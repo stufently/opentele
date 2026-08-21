@@ -2,10 +2,26 @@
 
 # opentele-ng
 
-> **Modern fork of [thedemons/opentele](https://github.com/thedemons/opentele).**
-> Python 3.10 – 3.14 • **pure-Python runtime, no Qt dependency** •
-> reads current Telegram Desktop 5.x – 6.x tdata format • drop-in
-> `import opentele` compatibility.
+**PyPI package name: [`opentele-ng`](https://pypi.org/project/opentele-ng/).**
+This GitHub repository is called `opentele` for historical reasons; the package
+it publishes is `opentele-ng`. Same project, two names.
+
+```bash
+pip install opentele-ng
+```
+
+The import path stays `opentele`, so existing code keeps working unchanged:
+
+```python
+from opentele.td import TDesktop
+```
+
+**What this fork changes:** `opentele-ng` is a maintained fork of
+[thedemons/opentele](https://github.com/thedemons/opentele) that runs on
+Python 3.10 – 3.14 and drops the PyQt5/PyQt6 runtime dependency entirely,
+parsing tdata in pure Python. Upstream last released to PyPI in January 2022
+and last committed in July 2024; it breaks on Python 3.13+ and pulls ~50 MB of
+Qt wheels just to read binary streams.
 
 [![PyPI version](https://img.shields.io/pypi/v/opentele-ng.svg)](https://pypi.org/project/opentele-ng/)
 [![Python](https://img.shields.io/pypi/pyversions/opentele-ng.svg)](https://pypi.org/project/opentele-ng/)
@@ -16,7 +32,8 @@
 
 ## Why this fork
 
-Upstream `thedemons/opentele` was last touched in 2022. By mid-2026 it stopped
+Upstream `thedemons/opentele` last shipped to PyPI in January 2022 (1.15.1) and
+last committed in July 2024. By mid-2026 it stopped
 working on modern Python (3.13+ broke the metaclass), missed several `lskType`
 keys added to tdata in 2024-2025 (silently dropping data on read), shipped
 stale device fingerprints, and required ~50 MB of PyQt5 wheels just to parse

@@ -1,5 +1,9 @@
 # opentele-ng
 
+**PyPI package name: [`opentele-ng`](https://pypi.org/project/opentele-ng/).**
+The GitHub repository is called `opentele`, the package it publishes is
+`opentele-ng`, and the import path stays `opentele`. Same project.
+
 > **Modern fork of [thedemons/opentele](https://github.com/thedemons/opentele).**
 > Python 3.10–3.14 • **pure-Python runtime, no Qt dependency** • reads current Telegram Desktop 5.x–6.x tdata format • drop-in `import opentele` compatibility.
 
@@ -50,7 +54,7 @@ asyncio.run(main())
 
 ## Why this fork
 
-Upstream `thedemons/opentele` was last touched in 2022 and started silently breaking on tdata from current Telegram Desktop (5.x–6.x) because Telegram added several `lskType` keys that desync the stream on read. `opentele-ng` ships the missing wire-format fixes plus a pure-Python `QDataStream` so you don't need to install Qt — see [the README](https://github.com/stufently/opentele) for the full breakdown.
+Upstream `thedemons/opentele` last shipped to PyPI in January 2022 and last committed in July 2024; it started silently breaking on tdata from current Telegram Desktop (5.x–6.x) because Telegram added several `lskType` keys that desync the stream on read. `opentele-ng` ships the missing wire-format fixes plus a pure-Python `QDataStream` so you don't need to install Qt — see [the README](https://github.com/stufently/opentele) for the full breakdown.
 
 ## Where next
 
