@@ -139,6 +139,17 @@ Not using unique_id
     {'device_model': 'Huawei HUAWEI Y625-U32', 'system_version': 'SDK 25'}
 ```
 
+!!! note "The class links on this page point at upstream's documentation"
+    `opentele-ng` has no API reference of its own yet, so `APIData`, the API
+    templates and `TelegramClient` / `TDesktop` above link to
+    `opentele.readthedocs.io` — the generated reference for the **original**
+    project, [thedemons/opentele](https://github.com/thedemons/opentele), last
+    built in 2022. Class and method names are unchanged in this fork, so the
+    signatures still apply, but the device and app fingerprints shipped in those
+    templates have been refreshed many times since; the current ones live in
+    `src/devices.json`, and the changes are listed in the
+    [CHANGELOG](https://github.com/stufently/opentele/blob/main/CHANGELOG.md).
+
 [APIDATA]: https://opentele.readthedocs.io/en/latest/documentation/authorization/api/#class-apidata
 [AndroidAPI]: https://opentele.readthedocs.io/en/latest/documentation/authorization/api/#class-telegramandroid
 [DesktopdAPI]: https://opentele.readthedocs.io/en/latest/documentation/authorization/api/#class-telegramdesktop

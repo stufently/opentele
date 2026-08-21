@@ -170,6 +170,24 @@ asyncio.run(main())
   line and whole classes marked `nocov`. Core wire-format modules:
   `td/storage.py` 91%, `td/qdatastream.py` 89%, `td/account.py` 88%,
   `td/mtp.py` 87%.
+- **tdata compatibility: verified against Telegram Desktop 7.0.9, with no
+  version check in the way.** `Storage.ReadFile` validates the `TDF$` magic and
+  the MD5 trailer, then reads the header's version field as information only
+  (it becomes `TDesktop.AppVersion`); it is never compared against a floor or a
+  ceiling, so nothing rejects a folder for being too new. Compatibility is
+  decided by content instead. The `lskType` enum in `td/configs.py` matches
+  TDesktop's own (`storage_account.cpp`) entry for entry, `0x00` – `0x1E`; the
+  account-map reader dispatches `lskDraft` (`0x01`) through `lskPrefs`
+  (`0x1E`), and an unrecognised key fails closed with a clear exception rather
+  than desyncing the stream (see 1.3.0). `lskUserMap` (`0x00`) identifies the
+  map file itself and is not written as a block by either side. Two naming and
+  gating details worth knowing: `0x11` is still called `lskTrustedBots` here
+  where TDesktop renamed it `lskTrustedPeers` (same ID), and the one hard
+  equality in the MTProto path is `MTP.Config.kVersion == 1` — `DcOptions`
+  accepts whatever positive version it finds on read and only writes
+  `kVersion = 2`. Checked against tdesktop `dev` at the v7.0.9 release
+  (2026-08-06). A later release could still require work here if it adds a
+  block type, changes the layout of an existing one, or bumps `MTP.Config`.
 - See [CHANGELOG.md](CHANGELOG.md) for the full per-release breakdown.
 
 ## Security

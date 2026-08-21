@@ -3,8 +3,49 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The advertised tdata support range was wrong, and it understated the
+  library.** `pyproject.toml` and `docs/index.md` claimed support for "current
+  TDesktop 5.x–6.x tdata format" while the fingerprint table in the same repo
+  already listed 7.0.8. Read against the source, neither number means anything:
+  `Storage.ReadFile` checks the `TDF$` magic and the MD5 trailer, then reads the
+  header's version field purely as information (it becomes `TDesktop.AppVersion`)
+  and never compares it to a floor or a ceiling. Compatibility is decided by the
+  contents. The `lskType` enum in `td/configs.py` matches TDesktop's own in
+  `storage_account.cpp` entry for entry, `0x00` – `0x1E`, checked line by line
+  against `dev` at the v7.0.9 release (2026-08-06); the account-map reader
+  dispatches `lskDraft` (`0x01`) through `lskPrefs` (`0x1E`), `lskUserMap`
+  (`0x00`) naming the map file rather than a block in it. One divergence is a
+  name, not an ID: TDesktop renamed `0x11` to `lskTrustedPeers`, this fork still
+  calls it `lskTrustedBots`. In the MTProto path the single hard equality is
+  `MTP.Config.kVersion == 1`; `DcOptions` accepts any positive version on read
+  and only writes `kVersion = 2`. So the range has been dropped rather than
+  re-numbered — a verified-against version plus "no version check in the way" is
+  both true and stable, where any pair of digits goes stale on TDesktop's next
+  release. The mechanism is now written out in the README's Status section and
+  under a new "Which Telegram Desktop versions can it read?" heading on the docs
+  home page, so the claim can be checked instead of trusted. The docs stop short
+  of promising forward compatibility: a later release adding a block type,
+  changing an existing one's layout, or bumping `MTP.Config` would still need
+  work. No code changed.
+
 ### Changed
 
+- **The API-reference links in `docs/examples/` are now labelled as upstream's.**
+  Eleven reference-style links across `convert-tdata-to-telethon.md`,
+  `convert-telethon-to-tdata.md` and `using-official-apis.md` resolve to
+  `opentele.readthedocs.io`, which is **thedemons/opentele**'s generated
+  reference, last built in 2022. They were left pointing there — this fork has
+  no API reference of its own, and the equivalent paths under
+  `stufently.github.io/opentele/` were requested and return 404, so rewriting
+  them would have traded someone else's working documentation for our own broken
+  links. Instead each of the three pages now carries a note saying whose
+  documentation it is, that class and method signatures still apply because the
+  names are unchanged, and where the fork's own changes are recorded. All three
+  upstream targets were re-checked and return 200. An `opentele-ng` API
+  reference remains the real fix; a 2022-era copy of the same generated pages
+  already sits unpublished in `docs-github/documentation/`.
 - **Discoverability: repository metadata and the README now name the PyPI
   package.** The repo is `stufently/opentele`, the package is `opentele-ng` —
   anyone searching GitHub for the name they typed into `pip install` found

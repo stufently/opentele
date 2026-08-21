@@ -78,5 +78,13 @@ asyncio.run(main())
 ```
 
 
+!!! note "The class links on this page point at upstream's documentation"
+    `opentele-ng` has no API reference of its own yet, so `TelegramClient` and
+    `TDesktop` above link to `opentele.readthedocs.io` — the generated reference
+    for the **original** project, [thedemons/opentele](https://github.com/thedemons/opentele),
+    last built in 2022. Class and method names are unchanged in this fork, so the
+    signatures still apply, but nothing added or changed since is described there.
+    For that, see the [CHANGELOG](https://github.com/stufently/opentele/blob/main/CHANGELOG.md).
+
 [TelegramClient]: https://opentele.readthedocs.io/en/latest/documentation/telethon/telegramclient/#class-telegramclient
 [TDesktop]: https://opentele.readthedocs.io/en/latest/documentation/telegram-desktop/tdesktop/#class-tdesktop
