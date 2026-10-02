@@ -28,5 +28,15 @@ COPY scripts/ ./scripts/
 RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -e ".[test]"
 
+# Tests write coverage, pytest and Hypothesis caches under /app. Give the
+# test account ownership after the editable install has finished.
+ARG APP_UID=10001
+ARG APP_GID=10001
+RUN groupadd -g ${APP_GID} app && \
+    useradd -u ${APP_UID} -g ${APP_GID} -d /home/app -m -s /usr/sbin/nologin app && \
+    chown -R app:app /app
+
+USER app
+
 # tdata_test.py — live integration test, requires real Telegram auth, excluded from CI
 CMD ["pytest", "-v", "--tb=short", "--ignore=tests/tdata_test.py", "tests/"]
