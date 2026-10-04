@@ -40,7 +40,7 @@ def test_aes_ige_roundtrip(payload_size: int) -> None:
 
 
 def test_telethon_version_is_v1() -> None:
-    """telethon должен быть в диапазоне 1.36..<2 — pin'ы в requirements.txt."""
+    """Telethon 1.x; interpreter-specific minimums are checked by wheel CI."""
     import telethon
 
     version = telethon.__version__

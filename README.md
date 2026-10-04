@@ -70,7 +70,10 @@ from opentele.tl import TelegramClient
 from opentele.api import API, CreateNewSession
 ```
 
-**Runtime deps:** `telethon>=1.36,<2`, `tgcrypto-pyrofork>=1.2.7`. **No Qt.**
+**Runtime deps:** `telethon>=1.36,<2` on Python 3.10–3.13;
+`telethon>=1.43,<2` on Python 3.14+ (synchronous client construction needs its
+event-loop fix); `tgcrypto-pyrofork>=1.2.7`. **No Qt.** CI checks both the
+minimum dependencies and the newest versions allowed by these ranges.
 
 Optional Pyrogram bridge (`ToPyrogram()` / `FromPyrogram()`):
 
@@ -159,8 +162,8 @@ asyncio.run(main())
 ## Status
 
 - Latest: **`v1.4.1`** (2026-10-04). PyPI: [`opentele-ng`](https://pypi.org/project/opentele-ng/) / Docker: [`ghcr.io/stufently/opentele-ng`](https://ghcr.io/stufently/opentele-ng) (Python 3.14). Production-ready. 1.4.1 ships the Telethon 1.45.0 / layer 229 alignment, refreshes the Docker lock, and adds official release checks to the monthly fork watch. 1.4.0 adds the **Pyrogram bridge** (`ToPyrogram()` / `FromPyrogram()`, optional `opentele-ng[pyrogram]` extra — the feature upstream listed as "incoming" for four years) and makes the advertised client version **MTProto-layer-aware**: `TELEGRAM_DESKTOP_LAYERS` maps each Telegram Desktop release to the layer read from its `api.tl`, and the version on the wire is picked to match the layer the installed Telethon (or Pyrogram) actually announces. Device/app fingerprints refreshed to July 2026. 1.3.2 fixes credential plumbing in `TelegramClient.__init__` — the plain Telethon-style positional call `TelegramClient(session, api_id, api_hash)` silently set `api_hash` to the `api_id`, so login RPCs failed with `ApiIdInvalidError` (`FromBundle` hit the same bug) — and makes the coverage gate measure the whole package instead of ~55% of it. 1.3.1 added `TelegramClient.FromBundle` (authorized client from a JSON bundle + session file) and fully automatic releases (version bump on `main` → tag → PyPI + GHCR via `autotag.yml`). 1.3.0 closed 5 architectural known-issues from 1.2.2: **`kPerformanceMode` default flipped to `False`** so new tdata is actually encrypted (was using a hard-coded `localKey`), UTF-8 passcodes now work (was ASCII-only → crash), unknown `lskType` keys fail closed (was desyncing the stream), `StorageAccount` always reads/writes MTP config (was data-loss class in perf mode), and the Docker image now installs from a hash-locked deps file for reproducible builds.
-- 371 tests in the suite. Local Python 3.14 verification: **368 passed, 3
-  opt-in tests skipped**, with **81.95% coverage** of the whole package
+- 383 tests in the suite. Local Python 3.14 verification: **380 passed, 3
+  opt-in tests skipped**, with **85.07% coverage** of the whole package
   (CI gate: 78%). CI covers Python 3.10–3.14 on Ubuntu, macOS and Windows;
   one test additionally skips below 3.13. Real-tdata tests require
   `OPENTELE_REAL_TDATA_PATH` and are not exercised in the default CI run.

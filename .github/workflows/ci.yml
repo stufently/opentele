@@ -17,10 +17,10 @@ jobs:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -71,3 +71,43 @@ jobs:
           assert not any(m.startswith('PyQt') for m in sys.modules), 'Qt accidentally pulled in'
           print(f'OK opentele-ng {opentele.__version__} wheel install end-to-end')
           "
+
+  minimum-dependencies:
+    name: Minimum dependencies on Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python: "3.10"
+            telethon: "1.36.0"
+          - python: "3.14"
+            telethon: "1.43.0"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Build wheel and install minimum runtime dependencies
+        env:
+          TELETHON_MINIMUM: ${{ matrix.telethon }}
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build --wheel --outdir /tmp/wheel
+          python -m venv /tmp/minimum-venv
+          /tmp/minimum-venv/bin/pip install /tmp/wheel/opentele_ng-*.whl "telethon==$TELETHON_MINIMUM" "tgcrypto-pyrofork==1.2.7"
+      - name: Check synchronous client and crypto without Qt
+        run: |
+          /tmp/minimum-venv/bin/python - <<'PY'
+          import sys
+          import tgcrypto
+          from opentele.tl import TelegramClient
+          client = TelegramClient(None)
+          assert not client.loop.is_closed()
+          client.session.close()
+          client.loop.close()
+          key, iv, plain = b"k" * 32, b"i" * 32, b"d" * 16
+          assert tgcrypto.ige256_decrypt(tgcrypto.ige256_encrypt(plain, key, iv), key, iv) == plain
+          assert not any(name.startswith("PyQt") for name in sys.modules)
+          print("Minimum runtime dependencies: OK")
+          PY

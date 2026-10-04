@@ -37,7 +37,12 @@ opentele-ng convert /path/to/Telegram/tdata \
     --use-current-session
 ```
 
-Add `--force` to overwrite an existing output file.
+Add `--force` to replace an existing output file. Conversion builds a fresh
+SQLite session beside the destination and publishes it only after disconnect
+has finished. The old file stays intact if conversion fails, and its cached
+entities, update state and takeout ID are not carried into the new account.
+Without `--force`, an output created by another process during conversion is
+also preserved. The output directory must already exist.
 
 ## Exit codes
 
@@ -46,7 +51,7 @@ Add `--force` to overwrite an existing output file.
 |    0 | Success.                                               |
 |    2 | The tdata path is not a directory / does not exist.    |
 |    3 | `TDesktop` failed to load (corrupt tdata, wrong path). |
-|    4 | Telethon did not produce the `.session` file.          |
+|    4 | The `.session` file could not be created or published. |
 |    5 | Output file exists; rerun with `--force`.              |
 |  130 | Interrupted (Ctrl-C).                                  |
 

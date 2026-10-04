@@ -15,8 +15,12 @@ from __future__ import annotations
 import argparse
 import asyncio
 import hashlib
+import inspect
 import json
+import os
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -98,6 +102,27 @@ def _normalize_session_path(p: Path) -> Path:
     return p if p.suffix == ".session" else p.with_suffix(p.suffix + ".session")
 
 
+def _publish_without_overwrite(source: Path, destination: Path) -> None:
+    """Publish a completed session without replacing a concurrent output."""
+    try:
+        os.link(source, destination)
+        return
+    except FileExistsError:
+        raise
+    except OSError:
+        # FAT/exFAT and some network filesystems do not support hard links.
+        # Exclusive creation retains the no-overwrite guard on those volumes.
+        with source.open("rb") as incoming:
+            flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0)
+            descriptor = os.open(destination, flags, 0o600)
+            try:
+                with os.fdopen(descriptor, "wb") as outgoing:
+                    shutil.copyfileobj(incoming, outgoing)
+            except BaseException:
+                destination.unlink(missing_ok=True)
+                raise
+
+
 async def _convert_async(tdata_path: Path, session_path: Path, *, flag_use_current: bool) -> int:
     from .api import API, CreateNewSession, UseCurrentSession
     from .exception import OpenTeleException
@@ -122,13 +147,11 @@ async def _convert_async(tdata_path: Path, session_path: Path, *, flag_use_curre
         # Disconnect so the .session file is flushed to disk cleanly.
         if hasattr(client, "disconnect"):
             res = client.disconnect()
-            if asyncio.iscoroutine(res):
+            if inspect.isawaitable(res):
                 await res
-    except Exception:
-        # Disconnect cleanup is best-effort — the .session file was already
-        # written by Telethon during ToTelethon(). A failed disconnect here
-        # shouldn't fail the convert.
-        pass
+    except Exception as exc:
+        print(f"error: could not finalize session file: {exc}", file=sys.stderr)
+        return 4
 
     if not session_path.exists():
         # Telethon appends `.session`; tolerate both.
@@ -138,7 +161,9 @@ async def _convert_async(tdata_path: Path, session_path: Path, *, flag_use_curre
         else:
             print(f"error: session file was not created at {session_path}", file=sys.stderr)
             return 4
-    print(f"ok: wrote session file → {session_path}")
+    if session_path.stat().st_size == 0:
+        print(f"error: session file is empty at {session_path}", file=sys.stderr)
+        return 4
     return 0
 
 
@@ -161,9 +186,34 @@ def cmd_convert(args: argparse.Namespace) -> int:
                 )
                 return 5
 
-    return asyncio.run(
-        _convert_async(tdata_path, session_path, flag_use_current=args.use_current_session)
-    )
+    # Build a fresh database even with --force: reopening an old SQLiteSession
+    # retains its entities, sent files, update state and takeout ID. Keep the
+    # old file intact until conversion and disconnect have completed.
+    try:
+        with tempfile.TemporaryDirectory(prefix=".opentele-", dir=suffixed_path.parent) as folder:
+            temporary = Path(folder) / "converted.session"
+            temporary.touch(mode=0o600)
+            result = asyncio.run(
+                _convert_async(tdata_path, temporary, flag_use_current=args.use_current_session)
+            )
+            if result:
+                return result
+            if args.force:
+                os.replace(temporary, suffixed_path)
+            else:
+                try:
+                    _publish_without_overwrite(temporary, suffixed_path)
+                except FileExistsError:
+                    print(
+                        f"error: refusing to overwrite existing {suffixed_path}; pass --force to override",
+                        file=sys.stderr,
+                    )
+                    return 5
+    except OSError as exc:
+        print(f"error: cannot write session file at {suffixed_path}: {exc}", file=sys.stderr)
+        return 4
+    print(f"ok: wrote session file → {suffixed_path}")
+    return 0
 
 
 def build_parser() -> argparse.ArgumentParser:

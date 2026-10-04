@@ -1,2 +1,3 @@
-telethon>=1.36,<2
+telethon>=1.36,<2; python_version < '3.14'
+telethon>=1.43,<2; python_version >= '3.14'
 tgcrypto-pyrofork>=1.2.7

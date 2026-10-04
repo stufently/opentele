@@ -1,7 +1,9 @@
 """Smoke tests for the opentele-ng CLI."""
+import asyncio
 import json
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 from opentele.__main__ import build_parser, main
@@ -180,3 +182,181 @@ def test_cli_info_json_on_real_fixture_tdata_parses(fixture_tdata_base):
     assert acc["MainDcId"] == 2
     assert acc["authKey_dcId"] == 2
     assert isinstance(acc["authKey_sha256"], str) and len(acc["authKey_sha256"]) == 64
+
+
+@pytest.mark.asyncio
+async def test_convert_waits_for_disconnect_future(tmp_path, monkeypatch, fixture_tdata_base):
+    """Telethon returns a shielded Future; success must wait for the flush."""
+    from opentele.__main__ import _convert_async
+    from opentele.td import TDesktop
+
+    output = tmp_path / "new.session"
+
+    class Client:
+        def disconnect(self):
+            async def flush():
+                await asyncio.sleep(0)
+                output.write_bytes(b"flushed")
+            return asyncio.shield(flush())
+
+    async def convert(self, **kwargs):
+        return Client()
+
+    monkeypatch.setattr(TDesktop, "ToTelethon", convert)
+    result = await _convert_async(Path(fixture_tdata_base), output, flag_use_current=True)
+    assert result == 0
+    assert output.read_bytes() == b"flushed"
+
+
+@pytest.mark.parametrize("suffix", ["", ".session"])
+def test_force_replaces_sqlite_session_without_old_account_cache(fixture_tdata_base, tmp_path, suffix):
+    """Use real offline conversion and a real SQLiteSession, not a file mock."""
+    from telethon import types
+    from telethon.crypto import AuthKey
+    from telethon.sessions import SQLiteSession
+
+    output = tmp_path / f"account{suffix}"
+    actual = tmp_path / "account.session"
+    old = SQLiteSession(str(actual))
+    old.auth_key = AuthKey(b"\xcd" * 256)
+    old.takeout_id = 12345
+    old.process_entities(types.User(id=999, access_hash=789, first_name="Old account", username="old_account"))
+    old.save()
+    old.close()
+
+    assert main(["convert", fixture_tdata_base, "-o", str(output), "--use-current-session", "--force"]) == 0
+
+    reopened = SQLiteSession(str(actual))
+    try:
+        assert reopened.auth_key.key == b"\xab" * 256
+        assert reopened.takeout_id is None
+        assert reopened.get_entity_rows_by_username("old_account") is None
+    finally:
+        reopened.close()
+    assert not list(tmp_path.glob(".opentele-*")), "temporary sessions must be removed"
+
+
+def test_failed_force_conversion_preserves_existing_session(tmp_path):
+    output = tmp_path / "old.session"
+    output.write_bytes(b"keep the original session")
+    assert main(["convert", str(tmp_path), "-o", str(output), "--force"]) == 3
+    assert output.read_bytes() == b"keep the original session"
+    assert not list(tmp_path.glob(".opentele-*"))
+
+
+def test_failed_conversion_does_not_leave_an_empty_output(tmp_path):
+    output = tmp_path / "new.session"
+    assert main(["convert", str(tmp_path), "-o", str(output)]) == 3
+    assert not output.exists()
+    assert not list(tmp_path.glob(".opentele-*"))
+
+
+def test_conversion_does_not_replace_output_created_while_running(tmp_path, monkeypatch):
+    from opentele import __main__ as cli
+
+    output = tmp_path / "new.session"
+
+    async def convert(tdata_path, session_path, **kwargs):
+        session_path.write_bytes(b"converted")
+        output.write_bytes(b"created by another process")
+        return 0
+
+    monkeypatch.setattr(cli, "_convert_async", convert)
+    assert main(["convert", str(tmp_path), "-o", str(output)]) == 5
+    assert output.read_bytes() == b"created by another process"
+    assert not list(tmp_path.glob(".opentele-*"))
+
+
+def test_conversion_missing_output_directory_exits_4(tmp_path, capsys):
+    output = tmp_path / "missing" / "new.session"
+    assert main(["convert", str(tmp_path), "-o", str(output)]) == 4
+    assert "cannot write session file" in capsys.readouterr().err
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("race", [False, True])
+def test_conversion_on_filesystem_without_hardlinks(fixture_tdata_base, tmp_path, monkeypatch, race):
+    import errno
+
+    from opentele import __main__ as cli
+
+    output = tmp_path / "new.session"
+
+    def unavailable(source, destination):
+        if race:
+            output.write_bytes(b"created by another process")
+        raise OSError(errno.EOPNOTSUPP, "hard links unavailable")
+
+    monkeypatch.setattr(cli.os, "link", unavailable)
+    result = main(["convert", fixture_tdata_base, "-o", str(output), "--use-current-session"])
+    assert result == (5 if race else 0)
+    if race:
+        assert output.read_bytes() == b"created by another process"
+    else:
+        from telethon.sessions import SQLiteSession
+        reopened = SQLiteSession(str(output))
+        try:
+            assert reopened.auth_key.key == b"\xab" * 256
+        finally:
+            reopened.close()
+    assert not list(tmp_path.glob(".opentele-*"))
+
+
+def test_failed_fallback_copy_removes_partial_output(fixture_tdata_base, tmp_path, monkeypatch):
+    import errno
+    import shutil
+
+    from opentele import __main__ as cli
+
+    output = tmp_path / "new.session"
+
+    def unavailable(*args):
+        raise OSError(errno.EOPNOTSUPP, "hard links unavailable")
+
+    def failed_copy(source, destination):
+        destination.write(b"partial")
+        raise OSError(errno.ENOSPC, "disk full")
+
+    monkeypatch.setattr(cli.os, "link", unavailable)
+    monkeypatch.setattr(shutil, "copyfileobj", failed_copy)
+    assert main(["convert", fixture_tdata_base, "-o", str(output), "--use-current-session"]) == 4
+    assert not output.exists()
+    assert not list(tmp_path.glob(".opentele-*"))
+
+
+@pytest.mark.asyncio
+async def test_failed_disconnect_does_not_report_success(tmp_path, monkeypatch, fixture_tdata_base):
+    from opentele.__main__ import _convert_async
+    from opentele.td import TDesktop
+
+    output = tmp_path / "partial.session"
+    output.write_bytes(b"unflushed")
+
+    class Client:
+        async def disconnect(self):
+            raise OSError("flush failed")
+
+    async def convert(self, **kwargs):
+        return Client()
+
+    monkeypatch.setattr(TDesktop, "ToTelethon", convert)
+    assert await _convert_async(Path(fixture_tdata_base), output, flag_use_current=True) == 4
+
+
+@pytest.mark.asyncio
+async def test_empty_session_is_not_published(tmp_path, monkeypatch, fixture_tdata_base):
+    from opentele.__main__ import _convert_async
+    from opentele.td import TDesktop
+
+    output = tmp_path / "empty.session"
+    output.touch()
+
+    class Client:
+        def disconnect(self):
+            return None
+
+    async def convert(self, **kwargs):
+        return Client()
+
+    monkeypatch.setattr(TDesktop, "ToTelethon", convert)
+    assert await _convert_async(Path(fixture_tdata_base), output, flag_use_current=True) == 4

@@ -3,6 +3,30 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- CLI `convert` now awaits every awaitable returned by `disconnect()`, including
+  Telethon's shielded Future, before reporting success or publishing the file.
+- CLI `convert --force` creates a fresh SQLite session and atomically replaces
+  the destination after conversion succeeds. It no longer inherits entities,
+  update state, sent-file cache or takeout ID from the previous account, nor
+  returns an existing account's authorized session during QR login. Failed
+  conversions preserve the old destination and remove temporary files. Without
+  `--force`, an output created while conversion runs is preserved too.
+  Filesystems without hard links use exclusive creation and binary copying,
+  with partial-output cleanup on write failure.
+- Python 3.14+ requires Telethon 1.43 or newer: older versions can raise
+  `RuntimeError: There is no current event loop` during synchronous client
+  construction. Python 3.10–3.13 retain the 1.36 minimum.
+
+### Changed
+
+- GitHub Actions refreshed from official stable releases and pinned to commit
+  SHAs, including checkout/setup, artifacts, CodeQL, Docker, Pages, attestations
+  and PyPI publishing. JavaScript actions use Node.js 24 explicitly.
+- CI checks a real wheel with the minimum Telethon and tgcrypto dependencies on
+  Python 3.10 and 3.14, in addition to the regular latest-dependency matrix.
+
 ## [1.4.1] - 2026-10-04
 
 ### Added
