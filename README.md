@@ -54,7 +54,7 @@ this one ships it.
 | **Phase 3** | `kMaxAccounts = 6` (was 3, matches TDesktop's `kPremiumMaxAccounts`). `**kwargs` forward in `FromTelethon` → `QRLoginToNewClient` for `proxy`/`connection`/`timeout`. Nuitka-compatible `sharemethod`. Ruff lint replaces broken upstream pylint workflow. |
 | **Phase 4** | 168 → 247 tests: QDataStream golden bytes, `hypothesis` property-based fuzzing (~1000 cases/run), real `TDesktop.SaveTData → load` roundtrip through `MapData.prepareToWrite()`. |
 | **Phase 1.0.3** | **Security:** 6 DoS guards on attacker-controlled `count` fields in `MapData.read` / `_setMtpAuthorization.readKeys` / account-list. Pre-loop cap by `bytesAvailable() // pair_size` + hard regression tests (no fail-open xfail). |
-| **Phase 6** | **Pyrogram bridge** (`ToPyrogram()` / `FromPyrogram()`, optional extra) — the "incoming feature" upstream never shipped; sends `lang_pack`, which Telethon cannot. **MTProto-layer-aware version picking**: the advertised Telegram Desktop version is drawn from builds that speak the same layer Telethon announces on the wire. 2026-08 fingerprints (TDesktop 7.0.8 table, Android 12.9.0, iOS 12.9.2, Chrome 150 UA). |
+| **Phase 6** | **Pyrogram bridge** (`ToPyrogram()` / `FromPyrogram()`, optional extra) — the "incoming feature" upstream never shipped; sends `lang_pack`, which Telethon cannot. **MTProto-layer-aware version picking**: the advertised Telegram Desktop version is drawn from builds that speak the same layer Telethon announces on the wire. 2026-10 Desktop table through 7.2.9 (layer 229); mobile/web fingerprints ( Android 12.9.0, iOS 12.9.2, Chrome 150 UA). |
 
 ## Install
 
@@ -158,19 +158,18 @@ asyncio.run(main())
 
 ## Status
 
-- Latest: **`v1.4.0`** (2026-07-29). PyPI: [`opentele-ng`](https://pypi.org/project/opentele-ng/) / Docker: [`ghcr.io/stufently/opentele-ng`](https://ghcr.io/stufently/opentele-ng) (Python 3.14). Production-ready. 1.4.0 adds the **Pyrogram bridge** (`ToPyrogram()` / `FromPyrogram()`, optional `opentele-ng[pyrogram]` extra — the feature upstream listed as "incoming" for four years) and makes the advertised client version **MTProto-layer-aware**: `TELEGRAM_DESKTOP_LAYERS` maps each Telegram Desktop release to the layer read from its `api.tl`, and the version on the wire is picked to match the layer the installed Telethon (or Pyrogram) actually announces. Device/app fingerprints refreshed to July 2026. 1.3.2 fixes credential plumbing in `TelegramClient.__init__` — the plain Telethon-style positional call `TelegramClient(session, api_id, api_hash)` silently set `api_hash` to the `api_id`, so login RPCs failed with `ApiIdInvalidError` (`FromBundle` hit the same bug) — and makes the coverage gate measure the whole package instead of ~55% of it. 1.3.1 added `TelegramClient.FromBundle` (authorized client from a JSON bundle + session file) and fully automatic releases (version bump on `main` → tag → PyPI + GHCR via `autotag.yml`). 1.3.0 closed 5 architectural known-issues from 1.2.2: **`kPerformanceMode` default flipped to `False`** so new tdata is actually encrypted (was using a hard-coded `localKey`), UTF-8 passcodes now work (was ASCII-only → crash), unknown `lskType` keys fail closed (was desyncing the stream), `StorageAccount` always reads/writes MTP config (was data-loss class in perf mode), and the Docker image now installs from a hash-locked deps file for reproducible builds.
-- 359 tests on Python 3.10 / 3.11 / 3.12 / 3.13 / 3.14 (Docker matrix + GitHub
-  Actions matrix × Ubuntu / macOS / Windows). 356 pass on 3.13 / 3.14 and 355 on
-  3.10 – 3.12 — one test is gated on a dunder that only exists from 3.13. The
-  other 3 are opt-in and skip unless `OPENTELE_REAL_TDATA_PATH` points at a real
-  tdata folder.
-- Coverage: **81.3% of the whole `opentele` package**, CI gate 78%. Since 1.3.2
-  that is measured over all ~3165 statements — the pre-1.3.2 "84%" was computed
-  over 1745, because `.coveragerc` excluded every `raise` / `except` / `pass`
-  line and whole classes marked `nocov`. Core wire-format modules:
-  `td/storage.py` 91%, `td/qdatastream.py` 89%, `td/account.py` 88%,
-  `td/mtp.py` 87%.
-- **tdata compatibility: verified against Telegram Desktop 7.0.9, with no
+- Latest: **`v1.4.1`** (2026-10-04). PyPI: [`opentele-ng`](https://pypi.org/project/opentele-ng/) / Docker: [`ghcr.io/stufently/opentele-ng`](https://ghcr.io/stufently/opentele-ng) (Python 3.14). Production-ready. 1.4.1 ships the Telethon 1.45.0 / layer 229 alignment, refreshes the Docker lock, and adds official release checks to the monthly fork watch. 1.4.0 adds the **Pyrogram bridge** (`ToPyrogram()` / `FromPyrogram()`, optional `opentele-ng[pyrogram]` extra — the feature upstream listed as "incoming" for four years) and makes the advertised client version **MTProto-layer-aware**: `TELEGRAM_DESKTOP_LAYERS` maps each Telegram Desktop release to the layer read from its `api.tl`, and the version on the wire is picked to match the layer the installed Telethon (or Pyrogram) actually announces. Device/app fingerprints refreshed to July 2026. 1.3.2 fixes credential plumbing in `TelegramClient.__init__` — the plain Telethon-style positional call `TelegramClient(session, api_id, api_hash)` silently set `api_hash` to the `api_id`, so login RPCs failed with `ApiIdInvalidError` (`FromBundle` hit the same bug) — and makes the coverage gate measure the whole package instead of ~55% of it. 1.3.1 added `TelegramClient.FromBundle` (authorized client from a JSON bundle + session file) and fully automatic releases (version bump on `main` → tag → PyPI + GHCR via `autotag.yml`). 1.3.0 closed 5 architectural known-issues from 1.2.2: **`kPerformanceMode` default flipped to `False`** so new tdata is actually encrypted (was using a hard-coded `localKey`), UTF-8 passcodes now work (was ASCII-only → crash), unknown `lskType` keys fail closed (was desyncing the stream), `StorageAccount` always reads/writes MTP config (was data-loss class in perf mode), and the Docker image now installs from a hash-locked deps file for reproducible builds.
+- 371 tests in the suite. Local Python 3.14 verification: **368 passed, 3
+  opt-in tests skipped**, with **81.95% coverage** of the whole package
+  (CI gate: 78%). CI covers Python 3.10–3.14 on Ubuntu, macOS and Windows;
+  one test additionally skips below 3.13. Real-tdata tests require
+  `OPENTELE_REAL_TDATA_PATH` and are not exercised in the default CI run.
+- Monthly `Forks and releases watch` checks diverging forks, the latest stable
+  Telegram Desktop's tagged MTProto layer, and Telethon against the Docker lock.
+  Official release drift or a failed check produces a report even when forks
+  have no activity. Run the release check locally with
+  `python scripts/release_watch.py`; it needs no installed runtime dependencies.
+- **tdata compatibility: checked against Telegram Desktop 7.2.9 source, with no
   version check in the way.** `Storage.ReadFile` validates the `TDF$` magic and
   the MD5 trailer, then reads the header's version field as information only
   (it becomes `TDesktop.AppVersion`); it is never compared against a floor or a
@@ -185,8 +184,8 @@ asyncio.run(main())
   where TDesktop renamed it `lskTrustedPeers` (same ID), and the one hard
   equality in the MTProto path is `MTP.Config.kVersion == 1` — `DcOptions`
   accepts whatever positive version it finds on read and only writes
-  `kVersion = 2`. Checked against tdesktop `dev` at the v7.0.9 release
-  (2026-08-06). A later release could still require work here if it adds a
+  `kVersion = 2`. Compared against the tagged v7.2.9 source (2026-09-17); the account-map
+  layout, MTP.Config and DcOptions serialization remain unchanged from 7.0.9. A later release could still require work here if it adds a
   block type, changes the layout of an existing one, or bumps `MTP.Config`.
 - See [CHANGELOG.md](CHANGELOG.md) for the full per-release breakdown.
 

@@ -58,7 +58,7 @@ Upstream `thedemons/opentele` last shipped to PyPI in January 2022 and last comm
 
 ### Which Telegram Desktop versions can it read?
 
-Verified against **Telegram Desktop 7.0.9** (2026-08-06), and nothing in the reader turns a folder away for being newer than that.
+Checked against **Telegram Desktop 7.2.9 source** (2026-09-17), and nothing in the reader turns a folder away for being newer than that.
 
 `Storage.ReadFile` checks the `TDF$` magic and the MD5 trailer, then treats the version field in the header as information — it becomes `TDesktop.AppVersion` — not as something to accept or reject. There is no floor and no ceiling. Compatibility is decided by the contents instead:
 
@@ -66,6 +66,8 @@ Verified against **Telegram Desktop 7.0.9** (2026-08-06), and nothing in the rea
 - The account-map reader dispatches `lskDraft` (`0x01`) through `lskPrefs` (`0x1E`). `lskUserMap` (`0x00`) names the map file itself and is not written as a block by either side.
 - An unrecognised key **fails closed** with a clear exception instead of desyncing the stream (behaviour introduced in 1.3.0). You get an error naming the key and its offset, not silently truncated data.
 - In the MTProto path the one hard equality is `MTP.Config.kVersion == 1`. `DcOptions` reads whatever positive version it finds and only writes `kVersion = 2`.
+
+The account-map layout, MTP.Config and DcOptions serialization remain unchanged from 7.0.9 in the tagged 7.2.9 source. This comparison does not replace a test with real tdata from that version.
 
 So a later Telegram Desktop could still require work here — if it adds a block type, changes the layout of an existing one, or bumps `MTP.Config` — but a version bump on its own does not.
 

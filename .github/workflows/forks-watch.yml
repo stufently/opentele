@@ -1,7 +1,8 @@
-name: Forks watch
+name: Forks and releases watch
 
 # Once a month: scan public forks of thedemons/opentele for new commits,
-# generate a Markdown report, open it as a GitHub Issue so it lands in the
+# check stable Telegram Desktop and Telethon releases, generate a Markdown
+# report, open it as a GitHub Issue so it lands in the
 # maintainer's notifications.
 #
 # Doesn't need any secrets — uses the default GITHUB_TOKEN which already has
@@ -32,12 +33,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python scripts/fork_watch.py > /tmp/forks-report.md
+          if python scripts/fork_watch.py > /tmp/forks-report.md; then
+            :
+          else
+            echo "Fork scan failed; check the workflow log." >> /tmp/forks-report.md
+            echo "has_activity=true" >> "$GITHUB_OUTPUT"
+          fi
           echo "Report size: $(wc -l < /tmp/forks-report.md) lines"
           cat /tmp/forks-report.md
 
+      - name: Check official releases
+        id: releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/release_watch.py >> /tmp/forks-report.md
+
       - name: Open issue with report
-        if: steps.report.outputs.has_activity == 'true'
+        if: steps.report.outputs.has_activity == 'true' || steps.releases.outputs.has_activity == 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -51,7 +63,7 @@ jobs:
                 repo: context.repo.repo,
                 name: 'forks-watch',
                 color: 'fbca04',
-                description: 'Monthly upstream fork activity report',
+                description: 'Monthly fork activity and official release report',
               });
             } catch (err) {
               if (err.status !== 422) throw err;
@@ -59,7 +71,7 @@ jobs:
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `Forks watch — ${today}`,
+              title: `Forks and releases watch — ${today}`,
               body: body,
               labels: ['forks-watch'],
             });

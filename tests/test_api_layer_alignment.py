@@ -100,14 +100,16 @@ def test_match_layer_false_widens_the_pool() -> None:
 def test_versions_for_layer_exact_match_wins() -> None:
     assert TD._versions_for_layer(227) == ["6.9.3", "6.9.2", "6.9.1", "6.9.0"]
     assert TD._versions_for_layer(228) == [
-        "7.0.8", "7.0.7", "7.0.6", "7.0.5", "7.0.4", "7.0.3", "7.0.2", "7.0.1",
+        "7.0.9", "7.0.8", "7.0.7", "7.0.6", "7.0.5", "7.0.4", "7.0.3", "7.0.2", "7.0.1",
     ]
 
 
 def test_versions_for_layer_falls_back_below_when_unknown() -> None:
     """A Telethon newer than this table must not fall back to ancient builds:
     it picks the highest layer that does not overshoot."""
-    assert TD._versions_for_layer(999) == ["7.2.9", "7.2.8"]
+    assert TD._versions_for_layer(999) == [
+        "7.2.9", "7.2.8", "7.2.7", "7.2.5", "7.1.5", "7.1.4", "7.1.3", "7.1.2", "7.1.1", "7.1.0",
+    ]
 
 
 def test_versions_for_layer_with_ancient_layer_returns_oldest_entries() -> None:
@@ -126,7 +128,7 @@ def test_versions_for_layer_none_returns_full_table() -> None:
 def test_no_beta_versions_in_table() -> None:
     """Betas report differently; advertising a beta-only build is a tell.
     These were all `prerelease: true` on GitHub when the table was built."""
-    betas = {"7.0.0", "6.9.4", "6.8.5", "6.8.4", "6.8.3", "6.7.7", "6.6.4",
+    betas = {"7.2.10", "7.2.6", "7.0.0", "6.9.4", "6.8.5", "6.8.4", "6.8.3", "6.7.7", "6.6.4",
              "6.6.3", "6.4.4", "6.4.3", "6.3.10", "6.2.6", "6.2.5", "6.0.3"}
     present = betas.intersection(TD.TELEGRAM_DESKTOP_VERSIONS)
     assert not present, f"beta builds must not be advertised: {sorted(present)}"

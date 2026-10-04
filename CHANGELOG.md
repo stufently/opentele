@@ -3,34 +3,26 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Fixed
+## [1.4.1] - 2026-10-04
 
-- **The advertised tdata support range was wrong, and it understated the
-  library.** `pyproject.toml` and `docs/index.md` claimed support for "current
-  TDesktop 5.x–6.x tdata format" while the fingerprint table in the same repo
-  already listed 7.0.8. Read against the source, neither number means anything:
-  `Storage.ReadFile` checks the `TDF$` magic and the MD5 trailer, then reads the
-  header's version field purely as information (it becomes `TDesktop.AppVersion`)
-  and never compares it to a floor or a ceiling. Compatibility is decided by the
-  contents. The `lskType` enum in `td/configs.py` matches TDesktop's own in
-  `storage_account.cpp` entry for entry, `0x00` – `0x1E`, checked line by line
-  against `dev` at the v7.0.9 release (2026-08-06); the account-map reader
-  dispatches `lskDraft` (`0x01`) through `lskPrefs` (`0x1E`), `lskUserMap`
-  (`0x00`) naming the map file rather than a block in it. One divergence is a
-  name, not an ID: TDesktop renamed `0x11` to `lskTrustedPeers`, this fork still
-  calls it `lskTrustedBots`. In the MTProto path the single hard equality is
-  `MTP.Config.kVersion == 1`; `DcOptions` accepts any positive version on read
-  and only writes `kVersion = 2`. So the range has been dropped rather than
-  re-numbered — a verified-against version plus "no version check in the way" is
-  both true and stable, where any pair of digits goes stale on TDesktop's next
-  release. The mechanism is now written out in the README's Status section and
-  under a new "Which Telegram Desktop versions can it read?" heading on the docs
-  home page, so the claim can be checked instead of trusted. The docs stop short
-  of promising forward compatibility: a later release adding a block type,
-  changing an existing one's layout, or bumping `MTP.Config` would still need
-  work. No code changed.
+### Added
+
+- Monthly fork watch also checks official stable Telegram Desktop releases
+  against the local version/layer table and Telethon releases against the Docker
+  lock. Release drift opens a report even when forks are quiet; failed checks
+  are reported for review instead of being treated as current.
 
 ### Changed
+
+- Docker now locks Telethon 1.45.0 (MTProto layer 229), with SHA-256 hashes from
+  PyPI. The dependency range remains `telethon>=1.36,<2`.
+- Backfilled stable Desktop 7.0.9, 7.1.0–7.1.5, 7.2.5 and 7.2.7 from official
+  releases. The latest stable remains 7.2.9; 7.2.6 and 7.2.10 are prereleases
+  and stay excluded. Tagged schemas confirm 7.0.9 uses layer 228 and the
+  backfilled 7.1/7.2 releases use 229.
+- tdata compatibility documentation is now checked against the 7.2.9 source:
+  account-map blocks, MTP.Config and DcOptions wire formats remain unchanged
+  from 7.0.9. This is a source comparison, not a new live-login test.
 
 - **The API-reference links in `docs/examples/` are now labelled as upstream's.**
   Eleven reference-style links across `convert-tdata-to-telethon.md`,
@@ -104,12 +96,41 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- README advertised 352 tests / 349 passing; the suite has been at 355 + 3
-  skipped since 1.4.0 (356 + 3 with the layer spot-check added above).
-  Counted on the Python 3.14 Docker image, not inferred. The same paragraph
-  claimed 356 pass "everywhere", which was never true below 3.13: the
-  version-gated test is one of those 356, not an extra, so 3.10 – 3.12 run
-  355 + 4. Both numbers are stated now.
+- Ship the layer-229 fingerprint entries added on October 2: fresh PyPI
+  installs with Telethon 1.45.0 now advertise Desktop 7.2.9 (layer 229), rather
+  than falling back to Desktop 7.0.6 (layer 228) in published 1.4.0.
+- The test image runs as UID/GID 10001, with writable application and home
+  directories, matching the production image's non-root runtime.
+
+- **The advertised tdata support range was wrong, and it understated the
+  library.** `pyproject.toml` and `docs/index.md` claimed support for "current
+  TDesktop 5.x–6.x tdata format" while the fingerprint table in the same repo
+  already listed 7.0.8. Read against the source, neither number means anything:
+  `Storage.ReadFile` checks the `TDF$` magic and the MD5 trailer, then reads the
+  header's version field purely as information (it becomes `TDesktop.AppVersion`)
+  and never compares it to a floor or a ceiling. Compatibility is decided by the
+  contents. The `lskType` enum in `td/configs.py` matches TDesktop's own in
+  `storage_account.cpp` entry for entry, `0x00` – `0x1E`, checked line by line
+  against `dev` at the v7.0.9 release (2026-08-06); the account-map reader
+  dispatches `lskDraft` (`0x01`) through `lskPrefs` (`0x1E`), `lskUserMap`
+  (`0x00`) naming the map file rather than a block in it. One divergence is a
+  name, not an ID: TDesktop renamed `0x11` to `lskTrustedPeers`, this fork still
+  calls it `lskTrustedBots`. In the MTProto path the single hard equality is
+  `MTP.Config.kVersion == 1`; `DcOptions` accepts any positive version on read
+  and only writes `kVersion = 2`. So the range has been dropped rather than
+  re-numbered — a verified-against version plus "no version check in the way" is
+  both true and stable, where any pair of digits goes stale on TDesktop's next
+  release. The mechanism is now written out in the README's Status section and
+  under a new "Which Telegram Desktop versions can it read?" heading on the docs
+  home page, so the claim can be checked instead of trusted. The docs stop short
+  of promising forward compatibility: a later release adding a block type,
+  changing an existing one's layout, or bumping `MTP.Config` would still need
+  work. No code changed.
+
+- README test counts and coverage now reflect the current suite, including
+  12 release-watch cases: 368 passed, 3 opt-in tests skipped, 81.95% coverage
+  on local Python 3.14. One additional test skips below Python 3.13; other
+  platforms and versions are covered by the hosted CI matrix.
 - **Pyrogram file sessions: the "don't reuse another account's `.session`" guard
   probed the wrong directory.** It resolved an omitted `workdir` to
   `os.getcwd()`, but Pyrogram defaults it to the *entry script's* directory
