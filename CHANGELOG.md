@@ -3,6 +3,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-10-04
+
 ### Fixed
 
 - CLI `convert` now awaits every awaitable returned by `disconnect()`, including
