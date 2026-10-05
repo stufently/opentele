@@ -14,7 +14,7 @@
 #       ghcr.io/stufently/opentele-ng:latest convert /tdata --output /out/me.session
 # Pinned by digest for reproducible builds. Refresh manually via:
 #   docker pull python:3.14-slim && docker inspect python:3.14-slim --format='{{index .RepoDigests 0}}'
-ARG PYTHON_BASE=python:3.14-slim@sha256:a7185a8e40af01bf891414a4df16ef10fc6000cee460a404a13da9029fe41604
+ARG PYTHON_BASE=python:3.14-slim@sha256:c3e521df8b2b498a7a682e7e18676771cb80c6b75b8699af886b2d554ce40151
 FROM ${PYTHON_BASE} AS builder
 
 WORKDIR /build

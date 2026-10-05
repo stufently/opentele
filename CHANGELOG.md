@@ -3,6 +3,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Docker base image digest refreshed: `python:3.14-slim@sha256:a7185a8e…` →
+  `sha256:c3e521df…` (Python 3.14.8) in `Dockerfile`, `Dockerfile.test` and
+  `scripts/publish.sh`. Test image: 380 passed, 3 skipped; runtime image
+  `--help`/`--version` OK.
+
 ## [1.4.2] - 2026-10-04
 
 ### Fixed
