@@ -1,5 +1,5 @@
 site_name: opentele-ng
-site_description: Modern fork of opentele for Python 3.10–3.14, no Qt runtime dependency.
+site_description: Modern fork of opentele for Python 3.11–3.14, no Qt runtime dependency.
 site_url: https://stufently.github.io/opentele/
 repo_url: https://github.com/stufently/opentele
 repo_name: stufently/opentele

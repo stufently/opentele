@@ -2,7 +2,7 @@
 # Phase 3: replaces upstream pylint workflow. Conservative — many ignores reflect
 # upstream code style we don't want to mass-rewrite. Tightening planned for Phase 4/5.
 
-target-version = "py310"
+target-version = "py311"
 line-length = 120
 exclude = [
     "build",

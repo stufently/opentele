@@ -30,7 +30,7 @@ RUN pip install --no-cache-dir --upgrade pip build && \
 FROM ${PYTHON_BASE}
 
 LABEL org.opencontainers.image.title="opentele-ng" \
-      org.opencontainers.image.description="Modern fork of opentele for Python 3.10-3.14 (no Qt runtime). Convert Telegram Desktop tdata to Telethon sessions." \
+      org.opencontainers.image.description="Modern fork of opentele for Python 3.11-3.14 (no Qt runtime). Convert Telegram Desktop tdata to Telethon sessions." \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.source="https://github.com/stufently/opentele" \
       org.opencontainers.image.documentation="https://stufently.github.io/opentele/"

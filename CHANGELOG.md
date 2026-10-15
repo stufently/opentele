@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Removed
+
+- **Python 3.10 support dropped** (CPython 3.10 reaches end of life on
+  2026-10-31). `requires-python` is now `>=3.11`; the 3.10 classifier and CI
+  lanes are gone, and the minimum-dependency check (Telethon 1.36) runs on
+  Python 3.11 instead. Ruff targets `py311`. Users on 3.10 keep resolving to
+  1.4.2. The next release should be a minor bump (1.5.0).
+
 ### Changed
 
 - Docker base image digest refreshed: `python:3.14-slim@sha256:a7185a8e…` →

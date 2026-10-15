@@ -667,7 +667,7 @@ class TelegramClient(telethon.TelegramClient, BaseObject):
                 # calculate when will the qr token expire
                 import datetime
 
-                time_now = datetime.datetime.now(datetime.timezone.utc)
+                time_now = datetime.datetime.now(datetime.UTC)
                 time_out = (qr_login.expires - time_now).seconds + 5
 
                 resp = await self(

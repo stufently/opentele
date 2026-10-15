@@ -5,7 +5,7 @@ The GitHub repository is called `opentele`, the package it publishes is
 `opentele-ng`, and the import path stays `opentele`. Same project.
 
 > **Modern fork of [thedemons/opentele](https://github.com/thedemons/opentele).**
-> Python 3.10–3.14 • **pure-Python runtime, no Qt dependency** • reads tdata from current Telegram Desktop, [no version gate](#which-telegram-desktop-versions-can-it-read) • drop-in `import opentele` compatibility.
+> Python 3.11–3.14 • **pure-Python runtime, no Qt dependency** • reads tdata from current Telegram Desktop, [no version gate](#which-telegram-desktop-versions-can-it-read) • drop-in `import opentele` compatibility.
 
 [![PyPI version](https://img.shields.io/pypi/v/opentele-ng.svg)](https://pypi.org/project/opentele-ng/)
 [![Python](https://img.shields.io/pypi/pyversions/opentele-ng.svg)](https://pypi.org/project/opentele-ng/)

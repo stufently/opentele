@@ -9,8 +9,8 @@ import pytest
 
 
 def test_python_version_supported() -> None:
-    """Минимум Python 3.10 — установлено в setup.py."""
-    assert sys.version_info >= (3, 10), f"Python {sys.version} too old"
+    """Минимум Python 3.11 — requires-python в pyproject.toml."""
+    assert sys.version_info >= (3, 11), f"Python {sys.version} too old"
 
 
 def test_import_opentele() -> None:

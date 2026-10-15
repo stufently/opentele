@@ -4,7 +4,7 @@ Thanks for taking the time to contribute. This document describes how the projec
 
 ## Quick start (Docker)
 
-The project is tested entirely in Docker — please don't `pip install` into your host Python. The CI matrix runs Python 3.10/3.11/3.12/3.13/3.14 on Ubuntu/macOS/Windows; the same images can run locally.
+The project is tested entirely in Docker — please don't `pip install` into your host Python. The CI matrix runs Python 3.11/3.12/3.13/3.14 on Ubuntu/macOS/Windows; the same images can run locally.
 
 ```bash
 git clone https://github.com/stufently/opentele
@@ -60,10 +60,10 @@ credentials — CI skips it and so should you.
 - No `--amend` of pushed commits.
 - For releases: bump `project.version` in `pyproject.toml` on `main` — `autotag.yml` then creates the `vX.Y.Z` tag automatically and dispatches `publish.yml` (test → build → PyPI) **and** `docker.yml` (GHCR). Pushing a `vX.Y.Z(-suffix)?` tag manually still works and is the fallback if the auto-dispatch fails.
 - **Land the changes and the version bump as two separate commits.** The bump
-  is the release trigger, and the release path does not wait for the 15-lane
+  is the release trigger, and the release path does not wait for the 12-lane
   CI matrix: `publish.yml` re-runs the suite on Ubuntu / Python 3.13 only, and
   `docker.yml` runs no tests at all. Bumping in the same commit as the code
-  means PyPI and GHCR can publish before macOS / Windows / Python 3.10-3.12
+  means PyPI and GHCR can publish before macOS / Windows / Python 3.11-3.12
   have reported. So: push the change, wait for `CI` to go green on `main`,
   then push a one-line commit that bumps the version.
 
