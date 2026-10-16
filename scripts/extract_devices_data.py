@@ -6,7 +6,7 @@ single JSON file. Re-running this script is safe — it produces the same
 bytes given the same input.
 
 Usage:
-    docker run --rm -v "$PWD:/work" -w /work python:3.14-slim \\
+    docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -e PATH=/tmp/.local/bin:/usr/local/bin:/usr/bin:/bin -v "$PWD:/work" -w /work python:3.14-slim \\
         bash -c 'pip install -q -e . && python scripts/extract_devices_data.py'
 
 Output: src/devices.json (commit alongside the slimmed devices.py).

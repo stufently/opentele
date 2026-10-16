@@ -19,7 +19,7 @@ docker run --rm opentele-test pytest --tb=short --ignore=tests/tdata_test.py \
     --cov=opentele --cov-report=term-missing --cov-fail-under=78 tests/
 
 # Lint
-docker run --rm -v "$PWD:/work" -w /work python:3.14-slim bash -c \
+docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -e PATH=/tmp/.local/bin:/usr/local/bin:/usr/bin:/bin -v "$PWD:/work" -w /work python:3.14-slim bash -c \
     "pip install -q ruff && ruff check ."
 ```
 

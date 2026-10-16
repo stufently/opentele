@@ -37,11 +37,7 @@ If you are doing **batch conversion of thousands of tdata folders**, the per-fol
 ## How to reproduce
 
 ```bash
-docker run --rm -v "$PWD:/work" -w /work python:3.13-slim bash -c '
-    apt-get update >/dev/null && apt-get install -y -qq \
-        libgl1 libegl1 libglib2.0-0 libxkbcommon-x11-0 \
-        libdbus-1-3 libfontconfig1 >/dev/null
-    pip install -q -e . PyQt6
-    python scripts/benchmark.py
-'
+docker build -f Dockerfile.test -t opentele-test .
+docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp \
+    -v "$PWD:/app:ro" -w /app opentele-test python scripts/benchmark.py
 ```

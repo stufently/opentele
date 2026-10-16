@@ -47,7 +47,7 @@ COPY --from=builder /build/requirements-docker.txt /tmp/
 
 # 1.3.0: install runtime deps from a hash-locked file (reproducible image),
 # then install the wheel without resolving its deps. Refresh the lock via:
-#     docker run --rm -v "$PWD:/work" -w /work python:3.14-slim bash -c \\
+#     docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -e PATH=/tmp/.local/bin:/usr/local/bin:/usr/bin:/bin -v "$PWD:/work" -w /work python:3.14-slim bash -c \\
 #         'pip install -q pip-tools && pip-compile --generate-hashes \\
 #         --output-file requirements-docker.txt pyproject.toml'
 RUN pip install --no-cache-dir --require-hashes -r /tmp/requirements-docker.txt && \
